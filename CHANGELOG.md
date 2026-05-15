@@ -6,9 +6,20 @@ All notable changes to the 273 Sleeves: Sound web app.
 
 ## [Unreleased]
 
+---
+
+## [0efdc2d] — 2026-05-15 — checkpoint before drawer refactor
+
+### Changed
+- `PressFlow` recovery block: rewritten with clearer two-paragraph explanation — identifies the exact failure point (tx1 succeeded, tx2 didn't), explains cost (one more transaction). Button restyled to match press flow conventions (`seal the audio →`).
+- `ConnectButton`: added unsealed-second detection. On connect and on page load, fans out parallel `isPressed` + `getAudio` reads for every wallet-owned token. If any token has `isPressed === true` and no audio sealed (`audioHex.length <= 2`), the header link switches from `"press your second →"` to `"finish sealing second #N →"` in amber (`text-amber-400/80`), the only non-white color in the app — signals urgency. Cleans up with a cancellation flag on disconnect.
+
+---
+
+## [2259da2] — 2026-05-15
+
 ### Added
-- `AboutPanel` component: toggleable inline panel on the home page with static copy about the 4′33″ concept, CC0 airdrop mechanics, and onchain storage. Placed above the footer in `app/page.tsx`.
-- `components/AboutPanel.tsx`: `"about this work"` / `"close"` toggle, `max-height` CSS transition, no new dependencies.
+- `AboutPanel` component: toggleable inline `"about this work"` / `"close"` panel with static copy about 4′33″, CC0 airdrop mechanics, and onchain storage. Placed above the footer in `app/page.tsx`. `max-height` CSS transition, no new dependencies.
 
 ### Changed
 - `GallerySection`: holder-aware CTA query key now includes `totalPressed` so the CTA re-evaluates when new seconds are pressed, not just on wallet change.
