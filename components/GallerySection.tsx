@@ -66,10 +66,15 @@ export default function GallerySection() {
 
   return (
     <>
-      <div className="flex items-center gap-4">
-        <span className="text-xs text-white/40 tabular-nums">
+      <div className="mb-4">
+        <p className="text-sm text-white/40 tabular-nums">
           {totalPressed} of {TOTAL_SECONDS} pressed
-        </span>
+        </p>
+        {totalPressed >= 260 && (
+          <p className="text-xs text-white/30 mt-1">
+            {TOTAL_SECONDS - totalPressed} seconds remain
+          </p>
+        )}
       </div>
 
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />

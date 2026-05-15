@@ -32,6 +32,13 @@ function formatDate(ts: bigint): string {
   });
 }
 
+function formatTokenTime(tokenId: number): string {
+  const secs = tokenId - 1;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function PressedView({ tokenId }: { tokenId: number }) {
   const { address } = useAccount();
 
@@ -94,6 +101,9 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   }, [tokenId]);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+  const [waveformVisible, setWaveformVisible] = useState(false);
+  const [copyVisible, setCopyVisible] = useState(false);
+  const [sublineVisible, setSublineVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -105,6 +115,17 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       setAudioBuffer(buffer);
     }).catch(() => {});
   }, [audioHex]);
+
+  useEffect(() => {
+    if (!audioBuffer) return;
+    requestAnimationFrame(() => {
+      setWaveformVisible(true);
+      setTimeout(() => {
+        setCopyVisible(true);
+        setTimeout(() => setSublineVisible(true), 400);
+      }, 800);
+    });
+  }, [audioBuffer]);
 
   useEffect(() => {
     return () => {
@@ -150,13 +171,29 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
     return (
       <div className="space-y-6 max-w-sm">
-        <p className="text-xs text-white">
-          second #{tokenId} is pressed. forever.
-        </p>
-
         {hasAudio && (
           <div className="space-y-3">
-            <Waveform audioBuffer={audioBuffer} width={320} height={48} />
+            <div
+              style={{
+                maxWidth: waveformVisible ? 320 : 0,
+                overflow: "hidden",
+                transition: "max-width 800ms linear",
+              }}
+            >
+              <Waveform audioBuffer={audioBuffer} width={320} height={48} />
+            </div>
+            <p
+              className="text-xs text-white transition-opacity duration-500"
+              style={{ opacity: copyVisible ? 1 : 0 }}
+            >
+              second #{tokenId} is sealed.
+            </p>
+            <p
+              className="text-xs text-white/40 transition-opacity duration-500"
+              style={{ opacity: sublineVisible ? 1 : 0 }}
+            >
+              it will play at {formatTokenTime(tokenId)} in the 4′33″.
+            </p>
             <button
               onClick={togglePlay}
               disabled={!audioBuffer}

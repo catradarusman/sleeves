@@ -20,7 +20,7 @@ const publicClient = createPublicClient({
   ),
 });
 
-type Step = "idle" | "tx1" | "generating" | "tx2" | "error";
+type Step = "idle" | "tx1" | "generating" | "tx2" | "done" | "error";
 
 export default function PressFlow({ tokenId }: { tokenId: number }) {
   const router = useRouter();
@@ -164,6 +164,8 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
 
     // Trust the receipt — do not call getAudio() to verify
     await publicClient.waitForTransactionReceipt({ hash: hash2 });
+    setStep("done");
+    await new Promise((r) => setTimeout(r, 600));
     router.push(`/pressed/${tokenId}`);
   }
 
@@ -213,32 +215,42 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
           <div>
             <p className="text-xs text-white/90">second #{tokenId}</p>
             <p className="text-xs text-white/50 mt-4 leading-relaxed">
-              your second has not been pressed. once you press it, the sound is
-              revealed and locked forever. you cannot preview it first. this is intentional.
+              second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
             </p>
           </div>
           <button
             onClick={handlePress}
-            className="text-xs border border-white/30 px-4 py-2 hover:border-white/60 transition-colors"
+            className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color] duration-200"
           >
-            press second #{tokenId}
+            press it →
           </button>
         </>
       )}
 
       {/* Step indicators (shared by both normal and resume flows) */}
-      {(step === "tx1" || step === "generating" || step === "tx2") && (
+      {(step === "tx1" || step === "generating" || step === "tx2" || step === "done") && (
         <div className="space-y-2">
-          {step === "tx2" && (
-            <p className="text-xs text-white/30">
-              once sealed, this audio cannot be changed.
+          <div className="flex items-baseline gap-1.5">
+            <p className="text-xs text-white/60 font-mono">
+              {step === "tx1" && `locking second #${tokenId}...`}
+              {step === "generating" && "synthesizing your sound..."}
+              {step === "tx2" && "sealing it onchain..."}
+              {step === "done" && "done."}
+            </p>
+            {step !== "done" && (
+              <span
+                className="text-xs text-white/60 font-mono"
+                style={{ animation: "blink 1s step-end infinite" }}
+              >
+                _
+              </span>
+            )}
+          </div>
+          {(step === "tx1" || step === "tx2") && (
+            <p className="text-xs text-white/30 tabular-nums">
+              {step === "tx1" ? "1 of 2" : "2 of 2"}
             </p>
           )}
-          <p className="text-xs text-white/50 tabular-nums">
-            {step === "tx1" && "1 of 2 — locking your second..."}
-            {step === "generating" && "generating your sound..."}
-            {step === "tx2" && "2 of 2 — sealing the audio..."}
-          </p>
         </div>
       )}
 

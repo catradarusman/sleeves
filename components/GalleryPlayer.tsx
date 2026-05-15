@@ -222,6 +222,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                       ? "bg-white/80"
                       : "bg-white/60",
                   ].join(" ")}
+                  title={`second #${tokenId} — pressed by ${shortAddress(second.holderAddress)}`}
                   onMouseEnter={() => setHovered(tokenId)}
                   onMouseLeave={() => setHovered(null)}
                   onClick={() => handleSegmentClick(tokenId)}
@@ -239,6 +240,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                   "flex-shrink-0 rounded-sm transition-colors cursor-pointer",
                   isHov ? "bg-white/30" : "bg-white/15",
                 ].join(" ")}
+                title={`second #${tokenId} — not yet pressed`}
                 onMouseEnter={() => setHovered(tokenId)}
                 onMouseLeave={() => setHovered(null)}
                 onClick={() => handleSegmentClick(tokenId)}
@@ -316,6 +318,14 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                   <div className="text-white/40">
                     {infoSecond.hasAudio ? "audio sealed" : "audio pending"}
                   </div>
+                  {infoSecond.hasAudio && (
+                    <a
+                      href={`farcaster://cast?text=${encodeURIComponent(`listen to second #${infoToken} of 273 sleeves — onchain audio by ${infoSecond.ensName ?? shortAddress(infoSecond.holderAddress)}`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
+                      className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                    >
+                      share on farcaster →
+                    </a>
+                  )}
                 </>
               ) : (
                 <div className="text-white/30">not yet pressed</div>
