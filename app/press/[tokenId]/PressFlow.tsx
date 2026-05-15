@@ -197,18 +197,20 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
     <div className="space-y-6 max-w-sm">
       {/* Recovery mode: pressed but audio not sealed */}
       {recoveryMode && step === "idle" && (
-        <>
-          <p className="text-xs text-white/90">second #{tokenId}</p>
-          <p className="text-xs text-white/60 leading-relaxed">
-            your second is locked but the audio isn&apos;t sealed. finish it.
-          </p>
+        <div className="space-y-4 max-w-sm">
+          <div className="space-y-1">
+            <p className="text-xs text-white/90">second #{tokenId} is locked — audio unsealed</p>
+            <p className="text-xs text-white/50 leading-relaxed">
+              your first transaction went through. the second one (sealing the audio) didn&apos;t complete. press below to finish — it only costs one more transaction.
+            </p>
+          </div>
           <button
             onClick={handleResume}
-            className="text-xs border border-white/30 px-4 py-2 hover:border-white/60 transition-colors"
+            className="text-xs border border-white/30 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200"
           >
-            seal the audio
+            seal the audio →
           </button>
-        </>
+        </div>
       )}
 
       {/* Normal press UI */}
