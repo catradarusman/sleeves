@@ -27,8 +27,6 @@ function shortAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-const SEGMENT_WIDTH = 4; // px per segment
-const SEGMENT_GAP = 1;
 const TRACK_HEIGHT = 48;
 
 export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryPlayerProps) {
@@ -38,6 +36,17 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
   const [currentSecond, setCurrentSecond] = useState(0); // 0 = stopped, 1–273 = active
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 640);
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  const segmentWidth = isMobile ? 8 : 4;
+  const segmentGap = isMobile ? 0 : 1;
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const scheduledNodesRef = useRef<AudioBufferSourceNode[]>([]);
@@ -164,8 +173,16 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
   }
 
   function handleSegmentClick(tokenId: number) {
-    setSelected(tokenId === selected ? null : tokenId);
-    handleSeek(tokenId);
+    if (isMobile) {
+      if (selected === tokenId) {
+        handleSeek(tokenId);
+      } else {
+        setSelected(tokenId);
+      }
+    } else {
+      setSelected(tokenId === selected ? null : tokenId);
+      handleSeek(tokenId);
+    }
   }
 
   // Scroll active segment into view
@@ -196,11 +213,11 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
       <div
         ref={timelineRef}
         className="overflow-x-auto pb-2 cursor-pointer"
-        style={{ scrollbarWidth: "thin", scrollbarColor: "#333 transparent" }}
+        style={{ scrollbarWidth: "thin", scrollbarColor: "#333 transparent", touchAction: "pan-x" }}
       >
         <div
           className="flex items-end gap-px"
-          style={{ minWidth: TOTAL_SECONDS * (SEGMENT_WIDTH + SEGMENT_GAP), height: TRACK_HEIGHT + 8 }}
+          style={{ minWidth: TOTAL_SECONDS * (segmentWidth + segmentGap), height: TRACK_HEIGHT + 8 }}
         >
           {Array.from({ length: TOTAL_SECONDS }, (_, i) => {
             const tokenId = i + 1;
@@ -213,7 +230,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                 <div
                   key={tokenId}
                   data-token={tokenId}
-                  style={{ width: SEGMENT_WIDTH, height: TRACK_HEIGHT }}
+                  style={{ width: segmentWidth, height: TRACK_HEIGHT }}
                   className={[
                     "flex-shrink-0 rounded-sm transition-colors cursor-pointer",
                     isActive
@@ -235,7 +252,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
               <div
                 key={tokenId}
                 data-token={tokenId}
-                style={{ width: SEGMENT_WIDTH, height: h }}
+                style={{ width: segmentWidth, height: h }}
                 className={[
                   "flex-shrink-0 rounded-sm transition-colors cursor-pointer",
                   isHov ? "bg-white/30" : "bg-white/15",

@@ -70,7 +70,7 @@ export default function GallerySection() {
   const pressedSet = new Set(pressedSeconds.map((s) => s.tokenId));
 
   const { data: unpressedIds } = useQuery<number[]>({
-    queryKey: ["holderUnpressed", address],
+    queryKey: ["holderUnpressed", address, totalPressed],
     queryFn: async () => {
       const owned = await getTokensOwnedBy(address!);
       return owned.filter((id) => !pressedSet.has(id));

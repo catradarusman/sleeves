@@ -1,5 +1,6 @@
 import ConnectButton from "@/components/ConnectButton";
 import GallerySection from "@/components/GallerySection";
+import AboutPanel from "@/components/AboutPanel";
 import { SOUND_CONTRACT } from "@/constants";
 
 export default function Home() {
@@ -18,6 +19,10 @@ export default function Home() {
       </div>
 
       <GallerySection />
+
+      <div className="mt-8">
+        <AboutPanel />
+      </div>
 
       <footer className="mt-16 text-xs text-white/20 flex justify-between">
         <span>273 Sleeves · Base Mainnet</span>

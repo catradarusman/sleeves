@@ -29,6 +29,8 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
 
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [checkboxChecked, setCheckboxChecked] = useState(false);
 
   const { data: isPressedData, isLoading } = useReadContract({
     address: SOUND_CONTRACT_ADDRESS,
@@ -212,18 +214,56 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
       {/* Normal press UI */}
       {!recoveryMode && step === "idle" && (
         <>
-          <div>
-            <p className="text-xs text-white/90">second #{tokenId}</p>
-            <p className="text-xs text-white/50 mt-4 leading-relaxed">
-              second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
-            </p>
-          </div>
-          <button
-            onClick={handlePress}
-            className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color] duration-200"
-          >
-            press it →
-          </button>
+          {!confirmed && (
+            <>
+              <div>
+                <p className="text-xs text-white/90">second #{tokenId}</p>
+                <p className="text-xs text-white/50 mt-4 leading-relaxed">
+                  second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
+                </p>
+              </div>
+              <button
+                onClick={() => setConfirmed(true)}
+                className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color] duration-200"
+              >
+                press it →
+              </button>
+            </>
+          )}
+
+          {confirmed && (
+            <div className="space-y-4 max-w-sm">
+              <p className="text-xs text-white/70 leading-relaxed">
+                this is permanent. your sound will be sealed onchain. you cannot preview it or undo this.
+              </p>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checkboxChecked}
+                  onChange={(e) => setCheckboxChecked(e.target.checked)}
+                  className="w-3 h-3 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors"
+                />
+                <span className="text-xs text-white/60">i understand, press my second</span>
+              </label>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handlePress}
+                  disabled={!checkboxChecked}
+                  className="text-xs border border-white/30 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  confirm and press
+                </button>
+                <button
+                  onClick={() => { setConfirmed(false); setCheckboxChecked(false); }}
+                  className="text-xs text-white/30 hover:text-white/50 transition-colors"
+                >
+                  go back
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
 
