@@ -1,9 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 import GalleryPlayer from "@/components/GalleryPlayer";
 import { TOTAL_SECONDS } from "@/constants";
-import { getAllPressedSeconds, getTotalPressed } from "@/lib/sleeves";
+import { getAllPressedSeconds, getTotalPressed, getTokensOwnedBy } from "@/lib/sleeves";
 import type { PressedSecond } from "@/lib/sleeves";
 
 const MOCK_PRESSED: PressedSecond[] = [
@@ -53,6 +54,8 @@ async function fetchGalleryData() {
 }
 
 export default function GallerySection() {
+  const { address } = useAccount();
+
   const { data, isError } = useQuery({
     queryKey: ["gallery"],
     queryFn: fetchGalleryData,
@@ -63,6 +66,17 @@ export default function GallerySection() {
   const pressedSeconds = data?.pressedSeconds ?? MOCK_PRESSED;
   const totalPressed = data?.totalPressed ?? MOCK_PRESSED.length;
   const usingMock = isError || pressedSeconds === MOCK_PRESSED;
+
+  const pressedSet = new Set(pressedSeconds.map((s) => s.tokenId));
+
+  const { data: unpressedIds } = useQuery<number[]>({
+    queryKey: ["holderUnpressed", address],
+    queryFn: async () => {
+      const owned = await getTokensOwnedBy(address!);
+      return owned.filter((id) => !pressedSet.has(id));
+    },
+    enabled: !!address,
+  });
 
   return (
     <>
@@ -76,6 +90,15 @@ export default function GallerySection() {
           </p>
         )}
       </div>
+
+      {unpressedIds && unpressedIds.length > 0 && (
+        <a
+          href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
+          className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
+        >
+          you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
+        </a>
+      )}
 
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />
 
