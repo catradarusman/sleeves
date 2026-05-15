@@ -80,7 +80,6 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           });
           if (!cancelled && (result as string).length > 2) {
             setAudioHex(result as string);
-            console.log("audioHex set, length:", (result as string).length);
             return;
           }
         } catch {
@@ -100,14 +99,11 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   useEffect(() => {
-    console.log("audioHex received, length:", audioHex?.length);
     if (!audioHex || audioHex.length <= 2) return;
     const bytes = new Uint8Array(Buffer.from(audioHex.slice(2), "hex"));
-    console.log("attempting decodeOgg, bytes length:", bytes.length, "first 4 bytes:", bytes[0], bytes[1], bytes[2], bytes[3]);
     decodeOgg(bytes).then((buffer) => {
-      console.log("audioBuffer set:", buffer.duration, buffer.numberOfChannels);
       setAudioBuffer(buffer);
-    }).catch((err) => console.error("decodeOgg failed:", err));
+    }).catch(() => {});
   }, [audioHex]);
 
   useEffect(() => {
@@ -117,22 +113,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    (window as any).testDeterminism = async (tokenId: number, address: string, pressedAt: bigint) => {
-      const { deriveSeed } = await import("@/lib/seed");
-      const { generateAudio } = await import("@/lib/audio");
-      const { keccak256 } = await import("viem");
-      const seed = deriveSeed(BigInt(tokenId), address as `0x${string}`, pressedAt);
-      const bytes = await generateAudio(seed);
-      console.log("bytes length:", bytes.length);
-      console.log("keccak256:", keccak256(bytes));
-      return { length: bytes.length, hash: keccak256(bytes) };
-    };
-  }, []);
-
   function togglePlay() {
-    console.log("togglePlay called, playing:", playing, "audioBuffer:", audioBuffer);
     if (playing) {
       try { sourceRef.current?.stop(); } catch {}
       setPlaying(false);

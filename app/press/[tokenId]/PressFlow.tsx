@@ -62,28 +62,15 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
     if (!isPressedData) return;
     if (pressedByData === undefined || audioHex === undefined) return;
 
-    console.warn(">>> PressFlow resolved:", {
-      isPressedData,
-      pressedByData,
-      audioHexType: typeof audioHex,
-      audioHexValue: audioHex,
-      audioHexLength: (audioHex as unknown as { length: number })?.length,
-      address,
-    });
-
     const isRecovery =
       address &&
       (pressedByData as string).toLowerCase() === address.toLowerCase() &&
       (audioHex as string).length <= 2;
 
-    console.warn(">>> isRecovery:", isRecovery);
-
     if (!isRecovery) {
       router.replace(`/pressed/${tokenId}`);
     }
   }, [isPressedData, pressedByData, audioHex, address, tokenId, router]);
-
-  console.warn(">>> PressFlow state:", { isPressedData, pressedByData, audioHex: (audioHex as string)?.length, address });
 
   // True when: pressed by this wallet, audio not yet sealed
   const recoveryMode =
@@ -93,8 +80,6 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
     !!address &&
     (pressedByData as string).toLowerCase() === address.toLowerCase() &&
     (audioHex as string).length <= 2;
-
-  console.log("recoveryMode:", recoveryMode);
 
   async function handlePress() {
     if (!address) return;
