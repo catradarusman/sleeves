@@ -18,10 +18,23 @@ export type PressedSecond = {
 function getClient() {
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
   const chain = chainId === 84532 ? baseSepolia : base;
-  const rpc = chainId === 84532
+  const defaultRpc = chainId === 84532
     ? "https://sepolia.base.org"
     : "https://mainnet.base.org";
+  const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? defaultRpc;
   return createPublicClient({ chain, transport: http(rpc) });
+}
+
+// Splits contracts into parallel chunks to stay within RPC multicall limits.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function multicallChunked(client: ReturnType<typeof getClient>, contracts: any[], chunkSize = 100): Promise<any[]> {
+  const chunks: unknown[][] = [];
+  for (let i = 0; i < contracts.length; i += chunkSize) {
+    chunks.push(contracts.slice(i, i + chunkSize));
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const results = await Promise.all(chunks.map((c) => client.multicall({ contracts: c as any })));
+  return results.flat();
 }
 
 export async function getTotalPressed(): Promise<number> {
@@ -92,35 +105,29 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   const minted = await getSleevesMinted(client);
   const tokenIds = Array.from({ length: minted }, (_, i) => i + 1);
 
-  const isPressedResults = await client.multicall({
-    contracts: tokenIds.map((id) => ({
-      address: SOUND_CONTRACT_ADDRESS,
-      abi: SLEEVES_SOUND_ABI,
-      functionName: "isPressed" as const,
-      args: [BigInt(id)] as const,
-    })),
-  });
+  const isPressedResults = await multicallChunked(client, tokenIds.map((id) => ({
+    address: SOUND_CONTRACT_ADDRESS,
+    abi: SLEEVES_SOUND_ABI,
+    functionName: "isPressed" as const,
+    args: [BigInt(id)] as const,
+  })));
 
   const pressedIds = tokenIds.filter((_, i) => isPressedResults[i].result === true);
   if (pressedIds.length === 0) return [];
 
   const [byResults, atResults] = await Promise.all([
-    client.multicall({
-      contracts: pressedIds.map((id) => ({
-        address: SOUND_CONTRACT_ADDRESS,
-        abi: SLEEVES_SOUND_ABI,
-        functionName: "pressedBy" as const,
-        args: [BigInt(id)] as const,
-      })),
-    }),
-    client.multicall({
-      contracts: pressedIds.map((id) => ({
-        address: SOUND_CONTRACT_ADDRESS,
-        abi: SLEEVES_SOUND_ABI,
-        functionName: "pressedAt" as const,
-        args: [BigInt(id)] as const,
-      })),
-    }),
+    multicallChunked(client, pressedIds.map((id) => ({
+      address: SOUND_CONTRACT_ADDRESS,
+      abi: SLEEVES_SOUND_ABI,
+      functionName: "pressedBy" as const,
+      args: [BigInt(id)] as const,
+    }))),
+    multicallChunked(client, pressedIds.map((id) => ({
+      address: SOUND_CONTRACT_ADDRESS,
+      abi: SLEEVES_SOUND_ABI,
+      functionName: "pressedAt" as const,
+      args: [BigInt(id)] as const,
+    }))),
   ]);
 
   return pressedIds.map((tokenId, i) => ({
@@ -148,14 +155,12 @@ export async function getTokensOwnedBy(address: string): Promise<number[]> {
   const minted = await getSleevesMinted(client);
   const tokenIds = Array.from({ length: minted }, (_, i) => i + 1);
 
-  const ownerResults = await client.multicall({
-    contracts: tokenIds.map((id) => ({
-      address: SLEEVES_CONTRACT_ADDRESS,
-      abi: ERC721_ABI,
-      functionName: "ownerOf" as const,
-      args: [BigInt(id)] as const,
-    })),
-  });
+  const ownerResults = await multicallChunked(client, tokenIds.map((id) => ({
+    address: SLEEVES_CONTRACT_ADDRESS,
+    abi: ERC721_ABI,
+    functionName: "ownerOf" as const,
+    args: [BigInt(id)] as const,
+  })));
 
   return tokenIds.filter(
     (_, i) => (ownerResults[i].result as string | undefined)?.toLowerCase() === address.toLowerCase()
