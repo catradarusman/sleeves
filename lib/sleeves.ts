@@ -1,6 +1,5 @@
 import { createPublicClient, http } from "viem";
 import { base, baseSepolia } from "viem/chains";
-import { TOTAL_SECONDS } from "@/constants";
 import {
   SLEEVES_SOUND_ABI,
   ERC721_ABI,
@@ -76,14 +75,23 @@ export async function getAudio(tokenId: number): Promise<Uint8Array> {
   return new Uint8Array(Buffer.from(result.slice(2), "hex"));
 }
 
-// Reads all pressed seconds in a single multicall sweep (1–273).
-// Returns only tokens where isPressed == true.
+// Returns the number of Sleeves NFTs minted so far (grows over time, max 273).
+async function getSleevesMinted(client: ReturnType<typeof getClient>): Promise<number> {
+  const result = await client.readContract({
+    address: SLEEVES_CONTRACT_ADDRESS,
+    abi: ERC721_ABI,
+    functionName: "totalSupply",
+  });
+  return Number(result);
+}
+
+// Reads all pressed seconds. Scopes multicall to minted tokens only — avoids
+// oversized batches against the public RPC that would fail for all 273.
 export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   const client = getClient();
+  const minted = await getSleevesMinted(client);
+  const tokenIds = Array.from({ length: minted }, (_, i) => i + 1);
 
-  const tokenIds = Array.from({ length: TOTAL_SECONDS }, (_, i) => i + 1);
-
-  // Batch: isPressed for all 273
   const isPressedResults = await client.multicall({
     contracts: tokenIds.map((id) => ({
       address: SOUND_CONTRACT_ADDRESS,
@@ -94,10 +102,8 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   });
 
   const pressedIds = tokenIds.filter((_, i) => isPressedResults[i].result === true);
-
   if (pressedIds.length === 0) return [];
 
-  // Batch: pressedBy + pressedAt for pressed tokens only
   const [byResults, atResults] = await Promise.all([
     client.multicall({
       contracts: pressedIds.map((id) => ({
@@ -117,31 +123,30 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
     }),
   ]);
 
-  // hasAudio: check via getAudio length — use tokenURI attributes as proxy;
-  // simplest: call getAudio and check bytes length > 0 via multicall
-  const audioResults = await client.multicall({
-    contracts: pressedIds.map((id) => ({
-      address: SOUND_CONTRACT_ADDRESS,
-      abi: SLEEVES_SOUND_ABI,
-      functionName: "getAudio" as const,
-      args: [BigInt(id)] as const,
-    })),
-  });
-
   return pressedIds.map((tokenId, i) => ({
     tokenId,
     holderAddress: (byResults[i].result as string) ?? "0x0000000000000000000000000000000000000000",
-    ensName: null, // ENS resolution done client-side via wagmi useEnsName
+    ensName: null,
     pressedAt: Number(atResults[i].result ?? BigInt(0)),
-    hasAudio: ((audioResults[i].result as `0x${string}`) ?? "0x").length > 2,
+    hasAudio: true, // audio is fetched lazily by GalleryPlayer.fetchBuffer
   }));
 }
 
 // Returns token IDs owned by an address in the Sleeves collection.
-// Multicalls ownerOf for all 273 IDs — avoids getLogs block range limits.
+// Scoped to minted tokens only to keep the multicall batch within RPC limits.
 export async function getTokensOwnedBy(address: string): Promise<number[]> {
   const client = getClient();
-  const tokenIds = Array.from({ length: TOTAL_SECONDS }, (_, i) => i + 1);
+
+  const balance = await client.readContract({
+    address: SLEEVES_CONTRACT_ADDRESS,
+    abi: ERC721_ABI,
+    functionName: "balanceOf",
+    args: [address as `0x${string}`],
+  });
+  if (Number(balance) === 0) return [];
+
+  const minted = await getSleevesMinted(client);
+  const tokenIds = Array.from({ length: minted }, (_, i) => i + 1);
 
   const ownerResults = await client.multicall({
     contracts: tokenIds.map((id) => ({
@@ -153,6 +158,6 @@ export async function getTokensOwnedBy(address: string): Promise<number[]> {
   });
 
   return tokenIds.filter(
-    (_, i) => ownerResults[i].result?.toLowerCase() === address.toLowerCase()
+    (_, i) => (ownerResults[i].result as string | undefined)?.toLowerCase() === address.toLowerCase()
   );
 }
