@@ -8,6 +8,20 @@ All notable changes to the 273 Sleeves: Sound web app.
 
 ---
 
+## [drawer-refactor] — 2026-05-15 — single-page press flow
+
+### Added
+- `PressDrawer` component (`components/PressDrawer.tsx`): slide-in panel that hosts the entire press flow without leaving the gallery. Desktop: right-side panel (`fixed right-0`, `w-80`, full height, `border-l`). Mobile (< 640px): bottom sheet (`fixed bottom-0`, `max-h-[80vh]`, rounded top). Overlay (`bg-black/50 z-40`) dims the gallery behind. CSS `translate` transition from off-screen to visible triggered 10ms after mount. Closing via `×` button or overlay click unmounts the component, resetting `PressFlow` state cleanly.
+
+### Changed
+- `app/page.tsx`: converted to client component to hold `pressTokenId: number | null` state. Passes `onPressCTA` down to `GallerySection`. Renders `<PressDrawer>` at the bottom of the page tree.
+- `GallerySection`: accepts `onPressCTA?: (tokenId: number) => void`. When provided, the "you have N second(s) waiting →" holder CTA renders as a `<button>` calling `onPressCTA(unpressedIds[0])` instead of navigating to `/press/[id]`. Falls back to the original `<a>` link when `onPressCTA` is not provided.
+- `PressFlow`: accepts `onComplete?: () => void`. When set: `runAudioAndSeal` waits 1500ms on the done state (instead of 600ms) then calls `onComplete()` instead of `router.push`. The already-pressed redirect also calls `onComplete()` rather than routing away. Done step shows `"second #N is sealed."` copy plus an inline Farcaster share link. Standalone page behavior unchanged when `onComplete` is undefined.
+- `ConnectButton`: removed auto-route-on-connect behavior. Connecting a wallet no longer navigates away from `/`. The "press your second →" / "finish sealing →" header links remain. Removed unused `useRouter`, `usePathname`, `useRef`, `prevStatus`, and `status` from the component.
+- All page headers (`app/page.tsx`, `app/press/[tokenId]/page.tsx`, `app/pressed/[tokenId]/page.tsx`, `app/press/page.tsx`, `app/no-sleeve/page.tsx`): `"273 Sleeves: Sound"` title wrapped in `<Link href="/">` with `hover:text-white/70 transition-colors`.
+
+---
+
 ## [0efdc2d] — 2026-05-15 — checkpoint before drawer refactor
 
 ### Changed

@@ -53,7 +53,7 @@ async function fetchGalleryData() {
   return { pressedSeconds, totalPressed };
 }
 
-export default function GallerySection() {
+export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: number) => void }) {
   const { address } = useAccount();
 
   const { data, isError } = useQuery({
@@ -92,12 +92,21 @@ export default function GallerySection() {
       </div>
 
       {unpressedIds && unpressedIds.length > 0 && (
-        <a
-          href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-          className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
-        >
-          you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
-        </a>
+        onPressCTA ? (
+          <button
+            onClick={() => onPressCTA(unpressedIds[0])}
+            className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
+          >
+            you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
+          </button>
+        ) : (
+          <a
+            href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
+            className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
+          >
+            you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
+          </a>
+        )
       )}
 
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />

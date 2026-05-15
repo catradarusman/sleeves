@@ -22,7 +22,7 @@ const publicClient = createPublicClient({
 
 type Step = "idle" | "tx1" | "generating" | "tx2" | "done" | "error";
 
-export default function PressFlow({ tokenId }: { tokenId: number }) {
+export default function PressFlow({ tokenId, onComplete }: { tokenId: number; onComplete?: () => void }) {
   const router = useRouter();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -70,9 +70,13 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
       (audioHex as string).length <= 2;
 
     if (!isRecovery) {
-      router.replace(`/pressed/${tokenId}`);
+      if (onComplete) {
+        onComplete();
+      } else {
+        router.replace(`/pressed/${tokenId}`);
+      }
     }
-  }, [isPressedData, pressedByData, audioHex, address, tokenId, router]);
+  }, [isPressedData, pressedByData, audioHex, address, tokenId, router, onComplete]);
 
   // True when: pressed by this wallet, audio not yet sealed
   const recoveryMode =
@@ -167,8 +171,12 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
     // Trust the receipt — do not call getAudio() to verify
     await publicClient.waitForTransactionReceipt({ hash: hash2 });
     setStep("done");
-    await new Promise((r) => setTimeout(r, 600));
-    router.push(`/pressed/${tokenId}`);
+    await new Promise((r) => setTimeout(r, onComplete ? 1500 : 600));
+    if (onComplete) {
+      onComplete();
+    } else {
+      router.push(`/pressed/${tokenId}`);
+    }
   }
 
   function toUserError(err: unknown): string {
@@ -277,7 +285,7 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
               {step === "tx1" && `locking second #${tokenId}...`}
               {step === "generating" && "synthesizing your sound..."}
               {step === "tx2" && "sealing it onchain..."}
-              {step === "done" && "done."}
+              {step === "done" && `second #${tokenId} is sealed.`}
             </p>
             {step !== "done" && (
               <span
@@ -292,6 +300,14 @@ export default function PressFlow({ tokenId }: { tokenId: number }) {
             <p className="text-xs text-white/30 tabular-nums">
               {step === "tx1" ? "1 of 2" : "2 of 2"}
             </p>
+          )}
+          {step === "done" && onComplete && (
+            <a
+              href={`farcaster://cast?text=${encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
+              className="text-xs text-white/40 hover:text-white/60 transition-colors"
+            >
+              share on farcaster →
+            </a>
           )}
         </div>
       )}

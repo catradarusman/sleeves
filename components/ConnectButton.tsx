@@ -2,8 +2,7 @@
 
 import { ConnectKitButton } from "connectkit";
 import { useAccount } from "wagmi";
-import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createPublicClient, http } from "viem";
 import { base, baseSepolia } from "viem/chains";
@@ -20,25 +19,8 @@ const publicClient = createPublicClient({
 });
 
 export default function ConnectButton() {
-  const { address, status, isConnected } = useAccount();
-  const router = useRouter();
-  const pathname = usePathname();
-  const prevStatus = useRef<string>();
+  const { address, isConnected } = useAccount();
   const [unsealedTokenId, setUnsealedTokenId] = useState<number | null>(null);
-
-  // Auto-route on connect, but only from the home page
-  useEffect(() => {
-    const prev = prevStatus.current;
-    prevStatus.current = status;
-
-    if (prev !== "connected" && status === "connected" && address && pathname === "/") {
-      getTokensOwnedBy(address).then((ids) => {
-        if (ids.length === 0) router.push("/no-sleeve");
-        else if (ids.length === 1) router.push(`/press/${ids[0]}`);
-        else router.push("/press");
-      });
-    }
-  }, [status, address, router, pathname]);
 
   // Check for unsealed seconds whenever the wallet is connected
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import ConnectButton from "@/components/ConnectButton";
 import { getTotalPressed } from "@/lib/sleeves";
 import { TOTAL_SECONDS } from "@/constants";
@@ -17,7 +18,7 @@ export default function NoSleeve() {
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-sm font-bold tracking-widest uppercase text-white/90">
-            273 Sleeves: Sound
+            <Link href="/" className="hover:text-white/70 transition-colors">273 Sleeves: Sound</Link>
           </h1>
           <p className="text-xs text-white/40 mt-0.5">4′33″ onchain · Base</p>
         </div>
