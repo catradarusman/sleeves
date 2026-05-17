@@ -27,6 +27,17 @@ function shortAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function pinHue(address: string): number {
+  return parseInt(address.slice(2, 6), 16) % 360;
+}
+
+function pinInitials(s: PressedSecond): string {
+  if (s.ensName) {
+    return s.ensName.split(".")[0].slice(0, 2).toUpperCase();
+  }
+  return s.holderAddress.slice(2, 4).toUpperCase();
+}
+
 const TRACK_HEIGHT = 48;
 
 export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryPlayerProps) {
@@ -210,6 +221,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
   return (
     <div className="w-full select-none">
       {/* Timeline */}
+      <div className="relative">
       <div
         ref={timelineRef}
         className="overflow-x-auto pb-2 cursor-pointer"
@@ -255,7 +267,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                 style={{ width: segmentWidth, height: h }}
                 className={[
                   "flex-shrink-0 rounded-sm transition-colors cursor-pointer",
-                  isHov ? "bg-white/30" : "bg-white/15",
+                  isHov ? "bg-white/40" : "bg-white/15",
                 ].join(" ")}
                 title={`second #${tokenId} — not yet pressed`}
                 onMouseEnter={() => setHovered(tokenId)}
@@ -265,6 +277,33 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
             );
           })}
         </div>
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#111] to-transparent" />
+      {currentSecond > 0 && (
+        <button
+          onClick={() => {
+            const sel = "[data-token='" + currentSecond + "']";
+            const el = timelineRef.current?.querySelector(sel) as HTMLElement | null;
+            el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          }}
+          className="absolute right-2 bottom-2 text-xs text-white/40 hover:text-white/70 transition-colors"
+        >
+          jump to now
+        </button>
+      )}
+      </div>
+
+      {/* Timeline legend */}
+      <div className="flex justify-between mt-2 text-white/40 text-xs">
+        <div className="flex gap-4">
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-4 bg-white/60 inline-block rounded-sm" /> pressed
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-2 bg-white/15 inline-block rounded-sm" /> available
+          </span>
+        </div>
+        <span>click to seek · hover for info</span>
       </div>
 
       {/* Holder pins */}
@@ -280,8 +319,11 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
               className="flex-shrink-0 flex flex-col items-center gap-0.5 opacity-60 hover:opacity-100 transition-opacity"
               title={`Second #${s.tokenId} — ${s.ensName ?? s.holderAddress}`}
             >
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold">
-                {(s.ensName ?? s.holderAddress).slice(2, 4).toUpperCase()}
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white/80"
+                style={{ backgroundColor: `hsl(${pinHue(s.holderAddress)}, 40%, 25%)` }}
+              >
+                {pinInitials(s)}
               </div>
               <span className="text-[9px] text-white/50">{s.tokenId}</span>
             </button>
@@ -290,14 +332,18 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
       )}
 
       {/* Transport */}
-      <div className="flex items-center gap-4 mt-3">
+      <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handlePlayPause}
-          className="w-8 h-8 flex items-center justify-center border border-white/30 rounded hover:border-white/70 transition-colors text-sm"
+          className="w-11 h-11 flex-shrink-0 flex items-center justify-center border border-white/40 rounded hover:border-white/70 transition-colors text-sm"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? "▐▐" : "▶"}
         </button>
+
+        <span className="text-xs text-white/50 tabular-nums flex-shrink-0">
+          {formatTime(elapsedSeconds)} / 4:33
+        </span>
 
         {/* Progress bar */}
         <div
@@ -314,10 +360,6 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
             style={{ width: `${(elapsedSeconds / TOTAL_SECONDS) * 100}%` }}
           />
         </div>
-
-        <span className="text-xs text-white/50 tabular-nums w-16 text-right">
-          {formatTime(elapsedSeconds)} / 4:33
-        </span>
       </div>
 
       {/* Info panel */}
@@ -338,14 +380,14 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                   {infoSecond.hasAudio && (
                     <a
                       href={`farcaster://cast?text=${encodeURIComponent(`listen to second #${infoToken} of 273 sleeves — onchain audio by ${infoSecond.ensName ?? shortAddress(infoSecond.holderAddress)}`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
-                      className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                      className="text-[10px] text-meta hover:text-white/60 transition-colors"
                     >
                       share on farcaster →
                     </a>
                   )}
                 </>
               ) : (
-                <div className="text-white/30">not yet pressed</div>
+                <div className="text-meta">not yet pressed</div>
               )}
             </div>
             {infoSecond?.hasAudio && (

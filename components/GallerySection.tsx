@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
+import { useEffect } from "react";
 import GalleryPlayer from "@/components/GalleryPlayer";
 import { TOTAL_SECONDS } from "@/constants";
 import { getAllPressedSeconds, getTotalPressed, getTokensOwnedBy } from "@/lib/sleeves";
@@ -78,41 +79,74 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
     enabled: !!address,
   });
 
+  useEffect(() => {
+    if (unpressedIds && unpressedIds.length > 0) {
+      import("../lib/audio").then((m) => m.preloadEncoder());
+    }
+  }, [unpressedIds]);
+
   return (
     <>
-      <div className="mb-4">
-        <p className="text-sm text-white/40 tabular-nums">
-          {totalPressed} of {TOTAL_SECONDS} pressed
-        </p>
-        {totalPressed >= 260 && (
-          <p className="text-xs text-white/30 mt-1">
-            {TOTAL_SECONDS - totalPressed} seconds remain
+      <div className="mb-6">
+        <div className="relative h-px bg-white/10 mb-2">
+          <div
+            className="absolute inset-y-0 left-0 bg-white/60"
+            style={{ width: `${(totalPressed / TOTAL_SECONDS) * 100}%` }}
+          />
+          {totalPressed < 260 && (
+            <div
+              className="absolute inset-y-0 w-px bg-white/20"
+              style={{ left: `${(260 / TOTAL_SECONDS) * 100}%` }}
+            />
+          )}
+        </div>
+        <div className="flex justify-between items-baseline">
+          <p className="text-xs text-white/40 tabular-nums">
+            {totalPressed} of {TOTAL_SECONDS} pressed
           </p>
-        )}
+          {totalPressed >= 260 && (
+            <p className="text-xs text-meta">
+              {TOTAL_SECONDS - totalPressed} left
+            </p>
+          )}
+          {totalPressed < 260 && (
+            <p className="text-xs text-white/20">
+              260 — airdrop
+            </p>
+          )}
+        </div>
       </div>
 
       {unpressedIds && unpressedIds.length > 0 && (
-        onPressCTA ? (
-          <button
-            onClick={() => onPressCTA(unpressedIds[0])}
-            className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
-          >
-            you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
-          </button>
-        ) : (
-          <a
-            href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-            className="text-xs text-white/60 hover:text-white transition-colors underline underline-offset-2 block mb-3"
-          >
-            you have {unpressedIds.length} {unpressedIds.length === 1 ? "second" : "seconds"} waiting →
-          </a>
-        )
+        <div className="border border-white/10 rounded p-4 mb-6">
+          <p className="text-xs text-meta mb-1">sleeve #{unpressedIds[0]}</p>
+          <p className="text-sm text-white/60 mb-3">
+            {unpressedIds.length === 1
+              ? "your second hasn't been pressed yet"
+              : `you have ${unpressedIds.length} seconds waiting`}
+          </p>
+          {onPressCTA ? (
+            <button
+              onClick={() => onPressCTA(unpressedIds[0])}
+              className="text-sm text-white hover:text-white/70 transition-colors"
+            >
+              press →
+            </button>
+          ) : (
+            <a
+              href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
+              className="text-sm text-white hover:text-white/70 transition-colors"
+            >
+              press →
+            </a>
+          )}
+        </div>
       )}
 
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />
 
       {usingMock && (
-        <p className="mt-4 text-xs text-white/20 text-center">
+        <p className="mt-4 text-xs text-meta text-center">
           mock data — contract reads unavailable
         </p>
       )}

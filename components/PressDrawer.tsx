@@ -56,7 +56,7 @@ export default function PressDrawer({ tokenId, onClose }: Props) {
           <span className="text-xs text-white/50">second #{tokenId} of 273</span>
           <button
             onClick={onClose}
-            className="text-xs text-white/30 hover:text-white/60 transition-colors"
+            className="text-xs text-meta hover:text-white/60 transition-colors"
           >
             ×
           </button>

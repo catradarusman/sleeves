@@ -104,6 +104,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   const [waveformVisible, setWaveformVisible] = useState(false);
   const [copyVisible, setCopyVisible] = useState(false);
   const [sublineVisible, setSublineVisible] = useState(false);
+  const [shareVisible, setShareVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -122,7 +123,10 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       setWaveformVisible(true);
       setTimeout(() => {
         setCopyVisible(true);
-        setTimeout(() => setSublineVisible(true), 400);
+        setTimeout(() => {
+          setSublineVisible(true);
+          setTimeout(() => setShareVisible(true), 600);
+        }, 400);
       }, 800);
     });
   }, [audioBuffer]);
@@ -154,7 +158,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   }
 
   if (!pressedBy) {
-    return <p className="text-xs text-white/30">loading...</p>;
+    return <p className="text-xs text-meta">loading...</p>;
   }
 
   const hasAudio = audioHex !== null && audioHex.length > 2;
@@ -174,13 +178,10 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
         {hasAudio && (
           <div className="space-y-3">
             <div
-              style={{
-                maxWidth: waveformVisible ? 320 : 0,
-                overflow: "hidden",
-                transition: "max-width 800ms linear",
-              }}
+              className="transition-opacity duration-300"
+              style={{ opacity: waveformVisible ? 1 : 0 }}
             >
-              <Waveform audioBuffer={audioBuffer} width={320} height={48} />
+              <Waveform audioBuffer={audioBuffer} width={320} height={48} animate={waveformVisible} />
             </div>
             <p
               className="text-xs text-white transition-opacity duration-500"
@@ -197,7 +198,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
             <button
               onClick={togglePlay}
               disabled={!audioBuffer}
-              className="text-xs border border-white/30 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+              className="text-xs border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
             >
               {playing ? "stop" : "play"}
             </button>
@@ -205,7 +206,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
         )}
 
         {!hasAudio && (
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-meta">
             {audioPollExhausted
               ? "audio is being sealed onchain — refresh in a moment."
               : "loading audio..."}
@@ -224,7 +225,8 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
         <a
           href={shareHref}
-          className="block text-xs text-white/50 hover:text-white transition-colors"
+          className="block text-xs text-white/50 hover:text-white transition-opacity duration-500"
+          style={{ opacity: shareVisible ? 1 : 0, pointerEvents: shareVisible ? "auto" : "none" }}
         >
           share on farcaster →
         </a>
@@ -248,7 +250,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           <button
             onClick={togglePlay}
             disabled={!audioBuffer}
-            className="text-xs border border-white/30 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+            className="text-xs border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
           >
             {playing ? "stop" : "play"}
           </button>
@@ -256,7 +258,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       )}
 
       {!hasAudio && (
-        <p className="text-xs text-white/30">
+        <p className="text-xs text-meta">
           {audioPollExhausted
             ? "audio is being sealed onchain — refresh in a moment."
             : "loading audio..."}

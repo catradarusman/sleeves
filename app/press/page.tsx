@@ -61,7 +61,7 @@ export default function PressPicker() {
       )}
 
       {address && (loading || tokenIds === null) && (
-        <p className="text-xs text-white/30">loading...</p>
+        <p className="text-xs text-meta">loading...</p>
       )}
 
       {address && tokenIds !== null && (
@@ -74,7 +74,7 @@ export default function PressPicker() {
                 return (
                   <div
                     key={id}
-                    className="text-xs text-white/20 border border-white/10 px-3 py-2 text-center"
+                    className="text-xs text-meta border border-white/10 px-3 py-2 text-center"
                   >
                     <span className="block">#{id}</span>
                     <span className="block text-[10px] mt-0.5">pressed</span>
@@ -85,7 +85,7 @@ export default function PressPicker() {
                 <Link
                   key={id}
                   href={`/press/${id}`}
-                  className="text-xs text-white border border-white/30 px-3 py-2 text-center hover:border-white/70 transition-colors"
+                  className="text-xs text-white border border-white/40 px-3 py-2 text-center hover:border-white/70 transition-colors"
                 >
                   <span className="block">#{id}</span>
                   <span className="block text-[10px] mt-0.5 text-white/40">press</span>

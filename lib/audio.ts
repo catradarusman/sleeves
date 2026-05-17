@@ -164,6 +164,10 @@ function patchOggSerial(ogg: Uint8Array, serial: number): Uint8Array {
 
 let ffmpegInstance: import("@ffmpeg/ffmpeg").FFmpeg | null = null;
 
+export function preloadEncoder(): void {
+  loadFfmpeg().catch(() => {});
+}
+
 async function loadFfmpeg(): Promise<import("@ffmpeg/ffmpeg").FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
   const { FFmpeg } = await import("@ffmpeg/ffmpeg");

@@ -198,7 +198,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
     isLoading || (isPressedData === true && (pressedByData === undefined || audioHex === undefined));
 
   if (stillLoading) {
-    return <p className="text-xs text-white/30">loading...</p>;
+    return <p className="text-xs text-meta">loading...</p>;
   }
 
   return (
@@ -214,7 +214,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
           </div>
           <button
             onClick={handleResume}
-            className="text-xs border border-white/30 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200"
+            className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200"
           >
             seal the audio →
           </button>
@@ -238,6 +238,9 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
               >
                 press it →
               </button>
+              <p className="text-xs text-meta mt-2">
+                requires 2 signatures — first locks your position, second seals the sound
+              </p>
             </>
           )}
 
@@ -247,12 +250,12 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 this is permanent. your sound will be sealed onchain. you cannot preview it or undo this.
               </p>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-3 cursor-pointer p-3 -mx-3 rounded hover:bg-white/5">
                 <input
                   type="checkbox"
                   checked={checkboxChecked}
                   onChange={(e) => setCheckboxChecked(e.target.checked)}
-                  className="w-3 h-3 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors"
+                  className="w-4 h-4 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors flex-shrink-0"
                 />
                 <span className="text-xs text-white/60">i understand, press my second</span>
               </label>
@@ -261,13 +264,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 <button
                   onClick={handlePress}
                   disabled={!checkboxChecked}
-                  className="text-xs border border-white/30 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
+                  className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
                 >
                   confirm and press
                 </button>
                 <button
                   onClick={() => { setConfirmed(false); setCheckboxChecked(false); }}
-                  className="text-xs text-white/30 hover:text-white/50 transition-colors"
+                  className="text-xs text-meta hover:text-white/50 transition-colors"
                 >
                   go back
                 </button>
@@ -278,6 +281,24 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
       )}
 
       {/* Step indicators (shared by both normal and resume flows) */}
+      {(step === "tx1" || step === "generating" || step === "tx2" || step === "done") && (() => {
+        const STEPS = ["lock", "generate", "seal"] as const;
+        const currentIdx = step === "tx1" ? 0 : step === "generating" ? 1 : step === "tx2" ? 2 : 3;
+        return (
+          <div className="flex gap-6 justify-center mb-6">
+            {STEPS.map((label, i) => (
+              <div key={label} className="flex flex-col items-center gap-1">
+                <div className={`w-6 h-6 rounded-full border ${
+                  i < currentIdx ? "bg-white border-white" :
+                  i === currentIdx ? "border-white animate-pulse" :
+                  "border-meta"
+                }`} />
+                <span className="text-xs text-meta">{label}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {(step === "tx1" || step === "generating" || step === "tx2" || step === "done") && (
         <div className="space-y-2">
           <div className="flex items-baseline gap-1.5">
@@ -297,7 +318,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             )}
           </div>
           {(step === "tx1" || step === "tx2") && (
-            <p className="text-xs text-white/30 tabular-nums">
+            <p className="text-xs text-meta tabular-nums">
               {step === "tx1" ? "1 of 2" : "2 of 2"}
             </p>
           )}
@@ -320,7 +341,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
               setStep("idle");
               setError(null);
             }}
-            className="text-xs text-white/30 hover:text-white/60 transition-colors"
+            className="text-xs text-meta hover:text-white/60 transition-colors"
           >
             try again
           </button>

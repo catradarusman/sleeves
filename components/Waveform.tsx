@@ -6,9 +6,10 @@ type Props = {
   audioBuffer: AudioBuffer | null;
   width?: number;
   height?: number;
+  animate?: boolean;
 };
 
-export default function Waveform({ audioBuffer, width = 300, height = 48 }: Props) {
+export default function Waveform({ audioBuffer, width = 300, height = 48, animate = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -22,7 +23,6 @@ export default function Waveform({ audioBuffer, width = 300, height = 48 }: Prop
     ctx.fillRect(0, 0, width, height);
 
     if (!audioBuffer) {
-      // Flat grey stub: centered horizontal line
       ctx.strokeStyle = "#444";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -37,8 +37,7 @@ export default function Waveform({ audioBuffer, width = 300, height = 48 }: Prop
     const samplesPerBar = Math.floor(data.length / barCount);
     const midY = height / 2;
 
-    ctx.fillStyle = "#ccc";
-
+    const peaks: number[] = [];
     for (let i = 0; i < barCount; i++) {
       let peak = 0;
       const start = i * samplesPerBar;
@@ -46,10 +45,40 @@ export default function Waveform({ audioBuffer, width = 300, height = 48 }: Prop
         const abs = Math.abs(data[j]);
         if (abs > peak) peak = abs;
       }
-      const barH = Math.max(1, peak * height);
-      ctx.fillRect(i, midY - barH / 2, 1, barH);
+      peaks.push(peak);
     }
-  }, [audioBuffer, width, height]);
+
+    if (!animate) {
+      ctx.fillStyle = "#ccc";
+      for (let i = 0; i < barCount; i++) {
+        const barH = Math.max(1, peaks[i] * height);
+        ctx.fillRect(i, midY - barH / 2, 1, barH);
+      }
+      return;
+    }
+
+    const duration = 600;
+    const start = performance.now();
+    let rafId: number;
+
+    function frame(now: number) {
+      const elapsed = now - start;
+      const revealed = Math.min(barCount, Math.floor((elapsed / duration) * barCount));
+      ctx!.fillStyle = "#111";
+      ctx!.fillRect(0, 0, width, height);
+      ctx!.fillStyle = "#ccc";
+      for (let i = 0; i < revealed; i++) {
+        const barH = Math.max(1, peaks[i] * height);
+        ctx!.fillRect(i, midY - barH / 2, 1, barH);
+      }
+      if (revealed < barCount) {
+        rafId = requestAnimationFrame(frame);
+      }
+    }
+
+    rafId = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafId);
+  }, [audioBuffer, width, height, animate]);
 
   return (
     <canvas

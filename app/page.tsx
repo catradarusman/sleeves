@@ -15,15 +15,19 @@ export default function Home() {
     <main className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-sm font-bold tracking-widest uppercase text-white/90">
+          <h1 className="text-display font-bold uppercase text-white/90">
             <Link href="/" className="hover:text-white/70 transition-colors">273 Sleeves: Sound</Link>
           </h1>
-          <p className="text-xs text-white/40 mt-0.5">4′33″ onchain · Base</p>
+          <p className="text-caption text-white/40 mt-0.5">4′33″ onchain · Base</p>
         </div>
         <div className="flex items-center gap-4">
           <ConnectButton />
         </div>
       </div>
+
+      <p className="text-body text-white/40 mb-4">
+        273 seconds of silence, pressed onchain one by one.
+      </p>
 
       <GallerySection onPressCTA={(id) => setPressTokenId(id)} />
 
@@ -31,7 +35,7 @@ export default function Home() {
         <AboutPanel />
       </div>
 
-      <footer className="mt-16 text-xs text-white/20 flex justify-between">
+      <footer className="mt-16 text-xs text-meta flex justify-between">
         <span>273 Sleeves · Base Mainnet</span>
         <a
           href={`https://basescan.org/address/${SOUND_CONTRACT}`}
