@@ -15,21 +15,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [miniAppConfig, setMiniAppConfig] = useState<ReturnType<typeof createConfig> | null>(null);
 
   useEffect(() => {
-    sdk.context
-      .then(async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const provider = (await sdk.wallet.getEthereumProvider()) as any;
-        const config = createConfig({
-          chains: [base, baseSepolia],
-          transports: {
-            [base.id]: custom(provider),
-            [baseSepolia.id]: custom(provider),
-          },
-        });
-        setMiniAppConfig(config);
-        setIsMiniApp(true);
-      })
-      .catch(() => {});
+    sdk.isInMiniApp().then(async (inMiniApp) => {
+      if (!inMiniApp) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const provider = (await sdk.wallet.getEthereumProvider()) as any;
+      const config = createConfig({
+        chains: [base, baseSepolia],
+        transports: {
+          [base.id]: custom(provider),
+          [baseSepolia.id]: custom(provider),
+        },
+      });
+      setMiniAppConfig(config);
+      setIsMiniApp(true);
+    }).catch(() => {});
   }, []);
 
   if (isMiniApp && miniAppConfig) {

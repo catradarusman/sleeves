@@ -1,12 +1,7 @@
 import { sdk } from '@farcaster/miniapp-sdk'
 
 export async function isInMiniApp(): Promise<boolean> {
-  try {
-    await sdk.context
-    return true
-  } catch {
-    return false
-  }
+  return sdk.isInMiniApp()
 }
 
 export async function getMiniAppProvider() {
