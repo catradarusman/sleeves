@@ -2,6 +2,8 @@
 
 import { useAccount, useReadContract } from "wagmi";
 import { useRef, useState, useEffect } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
+import { isInMiniApp } from "@/lib/miniapp";
 import { createPublicClient, http } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import Waveform from "@/components/Waveform";
@@ -187,9 +189,16 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
   // Screen D: you pressed it
   if (isOwn) {
-    const shareText = encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`);
-    const shareEmbed = encodeURIComponent("https://sleeves.catra.fyi");
-    const shareHref = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${shareEmbed}`;
+    async function handleShare() {
+      const text = `i pressed second #${tokenId} of 273 sleeves`;
+      const embedUrl = `https://sleeves.catra.fyi`;
+      if (await isInMiniApp()) {
+        await sdk.actions.composeCast({ text, embeds: [embedUrl] });
+      } else {
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
+        window.open(url, "_blank");
+      }
+    }
 
     return (
       <div className="space-y-6 max-w-sm">
@@ -248,13 +257,13 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           )}
         </div>
 
-        <a
-          href={shareHref}
-          className="block text-caption text-white/50 hover:text-white transition-opacity duration-500"
+        <button
+          onClick={handleShare}
+          className="block text-caption text-white/50 hover:text-white transition-opacity duration-500 text-left"
           style={{ opacity: shareVisible ? 1 : 0, pointerEvents: shareVisible ? "auto" : "none" }}
         >
           share on farcaster →
-        </a>
+        </button>
       </div>
     );
   }

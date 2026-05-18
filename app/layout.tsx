@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { MiniAppReady } from "@/components/MiniAppReady";
 
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
@@ -25,12 +26,29 @@ export const metadata: Metadata = {
     title: "273 Sleeves: Sound",
     images: ["/og-image.png"],
   },
+  other: {
+    "fc:miniapp": JSON.stringify({
+      version: "1",
+      imageUrl: "https://sleeves.catra.fyi/og-image.png",
+      button: {
+        title: "Press Your Second",
+        action: {
+          type: "launch_frame",
+          name: "273 Sleeves: Sound",
+          url: "https://sleeves.catra.fyi",
+          splashImageUrl: "https://sleeves.catra.fyi/icon.png",
+          splashBackgroundColor: "#111111",
+        },
+      },
+    }),
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${geistMono.variable} font-mono bg-[#111] text-white antialiased`}>
+        <MiniAppReady />
         <Providers>{children}</Providers>
       </body>
     </html>
