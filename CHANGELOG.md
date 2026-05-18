@@ -6,6 +6,9 @@ All notable changes to the 273 Sleeves: Sound web app.
 
 ## [Unreleased]
 
+### Fixed
+- ENS names now resolve and display in the pressed gallery. `getAllPressedSeconds()` in `lib/sleeves.ts` was hardcoding `ensName: null` for every holder — it now resolves all holder addresses against Ethereum mainnet in parallel after the Base contract reads complete. Deduplicated lookups via `Promise.allSettled` (failures gracefully fall back to `null`). An optional `NEXT_PUBLIC_ETH_RPC_URL` env var overrides the default public endpoint (`https://eth.llamarpc.com`). No changes to `GalleryPlayer` — it already conditionally displayed `ensName` over the truncated address throughout the info panel, holder pins, and tooltips.
+
 ---
 
 ## [drawer-refactor] — 2026-05-15 — single-page press flow

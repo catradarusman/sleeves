@@ -1,5 +1,5 @@
 import { createPublicClient, http } from "viem";
-import { base, baseSepolia } from "viem/chains";
+import { base, baseSepolia, mainnet } from "viem/chains";
 import {
   SLEEVES_SOUND_ABI,
   ERC721_ABI,
@@ -23,6 +23,25 @@ function getClient() {
     : "https://mainnet.base.org";
   const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? defaultRpc;
   return createPublicClient({ chain, transport: http(rpc) });
+}
+
+function getMainnetClient() {
+  const rpc = process.env.NEXT_PUBLIC_ETH_RPC_URL ?? "https://eth.llamarpc.com";
+  return createPublicClient({ chain: mainnet, transport: http(rpc) });
+}
+
+async function resolveEnsNames(addresses: string[]): Promise<Map<string, string | null>> {
+  const unique = [...new Set(addresses)];
+  const client = getMainnetClient();
+  const results = await Promise.allSettled(
+    unique.map((addr) => client.getEnsName({ address: addr as `0x${string}` }))
+  );
+  const map = new Map<string, string | null>();
+  unique.forEach((addr, i) => {
+    const r = results[i];
+    map.set(addr, r.status === "fulfilled" ? (r.value ?? null) : null);
+  });
+  return map;
 }
 
 // Splits contracts into parallel chunks to stay within RPC multicall limits.
@@ -130,10 +149,15 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
     }))),
   ]);
 
+  const addresses = pressedIds.map((_, i) =>
+    (byResults[i].result as string) ?? "0x0000000000000000000000000000000000000000"
+  );
+  const ensMap = await resolveEnsNames(addresses);
+
   return pressedIds.map((tokenId, i) => ({
     tokenId,
-    holderAddress: (byResults[i].result as string) ?? "0x0000000000000000000000000000000000000000",
-    ensName: null,
+    holderAddress: addresses[i],
+    ensName: ensMap.get(addresses[i]) ?? null,
     pressedAt: Number(atResults[i].result ?? BigInt(0)),
     hasAudio: true, // audio is fetched lazily by GalleryPlayer.fetchBuffer
   }));
