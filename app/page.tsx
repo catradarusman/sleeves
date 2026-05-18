@@ -12,8 +12,8 @@ export default function Home() {
   const [pressTokenId, setPressTokenId] = useState<number | null>(null);
 
   return (
-    <main className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
-      <div className="flex items-start justify-between mb-8">
+    <main className="min-h-screen px-4 pt-4 pb-6 max-w-lg mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <img src="/sleeve-art.gif" alt="273 Sleeves artwork" className="w-10 h-10 rounded object-cover opacity-80" />
           <div>

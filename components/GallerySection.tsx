@@ -3,7 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { useEffect } from "react";
+import Link from "next/link";
 import GalleryPlayer from "@/components/GalleryPlayer";
+import { useUnsealedToken } from "@/lib/useUnsealedToken";
 import { TOTAL_SECONDS } from "@/constants";
 import { getAllPressedSeconds, getTotalPressed, getTokensOwnedBy } from "@/lib/sleeves";
 import type { PressedSecond } from "@/lib/sleeves";
@@ -56,6 +58,7 @@ async function fetchGalleryData() {
 
 export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: number) => void }) {
   const { address } = useAccount();
+  const unsealedTokenId = useUnsealedToken(address);
 
   const { data, isError } = useQuery({
     queryKey: ["gallery"],
@@ -137,22 +140,47 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
           {onPressCTA ? (
             <button
               onClick={() => onPressCTA(unpressedIds[0])}
-              className="text-body text-white hover:text-white/70 transition-colors"
+              className="w-full mt-3 py-2.5 text-sm font-mono text-black bg-white rounded hover:bg-white/90 transition-colors"
             >
-              press →
+              press your second →
             </button>
           ) : (
             <a
               href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-              className="text-body text-white hover:text-white/70 transition-colors"
+              className="block w-full mt-3 py-2.5 text-sm font-mono text-center text-black bg-white rounded hover:bg-white/90 transition-colors"
             >
-              press →
+              press your second →
             </a>
           )}
         </div>
       )}
 
+      {unsealedTokenId !== null && (
+        <div className="border border-amber-400/20 rounded p-4 mb-6">
+          <p className="text-caption text-amber-400/60 mb-1">sleeve #{unsealedTokenId}</p>
+          <p className="text-body text-white/60 mb-3">audio not yet sealed onchain</p>
+          <Link href={`/press/${unsealedTokenId}`}
+            className="block w-full py-2.5 text-sm font-mono text-center text-amber-400/80 border border-amber-400/20 rounded hover:border-amber-400/40 transition-colors">
+            finish sealing →
+          </Link>
+        </div>
+      )}
+
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />
+
+      {address && unpressedIds && unpressedIds.length === 0 && (
+        <div className="border border-white/10 rounded p-4 mb-6">
+          <p className="text-caption text-meta mb-1">no sleeve yet</p>
+          <p className="text-body text-white/40 mb-3">get a sleeve to press your second onchain</p>
+          <a
+            href="https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3"
+            target="_blank" rel="noopener noreferrer"
+            className="block w-full py-2.5 text-sm font-mono text-center text-white/80 border border-white/20 rounded hover:border-white/40 transition-colors"
+          >
+            get a sleeve on Highlight →
+          </a>
+        </div>
+      )}
 
       {usingMock && (
         <p className="mt-4 text-caption text-meta text-center">
