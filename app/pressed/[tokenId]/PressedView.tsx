@@ -101,7 +101,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   }, [tokenId]);
 
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [waveformVisible, setWaveformVisible] = useState(false);
+  const [visibleBars, setVisibleBars] = useState(0);
   const [copyVisible, setCopyVisible] = useState(false);
   const [sublineVisible, setSublineVisible] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
@@ -119,16 +119,34 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
   useEffect(() => {
     if (!audioBuffer) return;
-    requestAnimationFrame(() => {
-      setWaveformVisible(true);
+
+    const duration = 600;
+    const startTime = performance.now();
+    let rafId: number;
+
+    function step(now: number) {
+      const elapsed = now - startTime;
+      const revealed = Math.min(40, Math.floor((elapsed / duration) * 40));
+      setVisibleBars(revealed);
+      if (revealed < 40) {
+        rafId = requestAnimationFrame(step);
+      }
+    }
+
+    rafId = requestAnimationFrame(step);
+
+    const t1 = setTimeout(() => {
+      setCopyVisible(true);
       setTimeout(() => {
-        setCopyVisible(true);
-        setTimeout(() => {
-          setSublineVisible(true);
-          setTimeout(() => setShareVisible(true), 600);
-        }, 400);
-      }, 800);
-    });
+        setSublineVisible(true);
+        setTimeout(() => setShareVisible(true), 600);
+      }, 400);
+    }, 800);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(t1);
+    };
   }, [audioBuffer]);
 
   useEffect(() => {
@@ -158,7 +176,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   }
 
   if (!pressedBy) {
-    return <p className="text-xs text-meta">loading...</p>;
+    return <p className="text-caption text-meta">loading...</p>;
   }
 
   const hasAudio = audioHex !== null && audioHex.length > 2;
@@ -171,49 +189,56 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   if (isOwn) {
     const shareText = encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`);
     const shareEmbed = encodeURIComponent("https://sleeves.catra.fyi");
-    const shareHref = `farcaster://cast?text=${shareText}&embeds[]=${shareEmbed}`;
+    const shareHref = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${shareEmbed}`;
 
     return (
       <div className="space-y-6 max-w-sm">
         {hasAudio && (
-          <div className="space-y-3">
-            <div
-              className="transition-opacity duration-300"
-              style={{ opacity: waveformVisible ? 1 : 0 }}
-            >
-              <Waveform audioBuffer={audioBuffer} width={320} height={48} animate={waveformVisible} />
+          <div className="flex items-start gap-4">
+            <img
+              src="/sleeve-art.gif"
+              alt="your sleeve"
+              className="w-20 h-20 rounded object-cover opacity-70 flex-shrink-0"
+            />
+            <div className="space-y-3 flex-1">
+              <div
+                className="transition-opacity duration-300"
+                style={{ opacity: visibleBars > 0 ? 1 : 0 }}
+              >
+                <Waveform audioBuffer={audioBuffer} width={220} height={48} visibleBars={visibleBars} />
+              </div>
+              <p
+                className="text-label text-white transition-opacity duration-500"
+                style={{ opacity: copyVisible ? 1 : 0 }}
+              >
+                second #{tokenId} is sealed.
+              </p>
+              <p
+                className="text-caption text-white/40 transition-opacity duration-500"
+                style={{ opacity: sublineVisible ? 1 : 0 }}
+              >
+                it will play at {formatTokenTime(tokenId)} in the 4′33″.
+              </p>
+              <button
+                onClick={togglePlay}
+                disabled={!audioBuffer}
+                className="text-caption border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+              >
+                {playing ? "stop" : "play"}
+              </button>
             </div>
-            <p
-              className="text-xs text-white transition-opacity duration-500"
-              style={{ opacity: copyVisible ? 1 : 0 }}
-            >
-              second #{tokenId} is sealed.
-            </p>
-            <p
-              className="text-xs text-white/40 transition-opacity duration-500"
-              style={{ opacity: sublineVisible ? 1 : 0 }}
-            >
-              it will play at {formatTokenTime(tokenId)} in the 4′33″.
-            </p>
-            <button
-              onClick={togglePlay}
-              disabled={!audioBuffer}
-              className="text-xs border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
-            >
-              {playing ? "stop" : "play"}
-            </button>
           </div>
         )}
 
         {!hasAudio && (
-          <p className="text-xs text-meta">
+          <p className="text-caption text-meta">
             {audioPollExhausted
               ? "audio is being sealed onchain — refresh in a moment."
               : "loading audio..."}
           </p>
         )}
 
-        <div className="text-xs text-white/40 space-y-1">
+        <div className="text-caption text-white/40 space-y-1">
           <p>
             pressed by you
             {pressedAtData ? ` · ${formatDate(pressedAtData as bigint)}` : ""}
@@ -225,7 +250,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
         <a
           href={shareHref}
-          className="block text-xs text-white/50 hover:text-white transition-opacity duration-500"
+          className="block text-caption text-white/50 hover:text-white transition-opacity duration-500"
           style={{ opacity: shareVisible ? 1 : 0, pointerEvents: shareVisible ? "auto" : "none" }}
         >
           share on farcaster →
@@ -238,8 +263,8 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   return (
     <div className="space-y-6 max-w-sm">
       <div>
-        <p className="text-xs text-white">second #{tokenId}</p>
-        <p className="text-xs text-white/50 mt-1">
+        <p className="text-label text-white">second #{tokenId}</p>
+        <p className="text-caption text-white/50 mt-1">
           pressed by {shortAddress(pressedBy as string)}
         </p>
       </div>
@@ -250,7 +275,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           <button
             onClick={togglePlay}
             disabled={!audioBuffer}
-            className="text-xs border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+            className="text-caption border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
           >
             {playing ? "stop" : "play"}
           </button>
@@ -258,20 +283,20 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       )}
 
       {!hasAudio && (
-        <p className="text-xs text-meta">
+        <p className="text-caption text-meta">
           {audioPollExhausted
             ? "audio is being sealed onchain — refresh in a moment."
             : "loading audio..."}
         </p>
       )}
 
-      <p className="text-xs text-white/40">
+      <p className="text-caption text-white/40">
         pressed on {pressedAtData ? formatDate(pressedAtData as bigint) : "—"}
       </p>
 
       <a
         href="/"
-        className="text-xs text-white/40 hover:text-white transition-colors"
+        className="text-caption text-white/40 hover:text-white transition-colors"
       >
         view the full composition →
       </a>

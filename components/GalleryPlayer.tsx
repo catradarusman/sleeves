@@ -27,15 +27,13 @@ function shortAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-function pinHue(address: string): number {
-  return parseInt(address.slice(2, 6), 16) % 360;
+function addressHue(addr: string): number {
+  return parseInt(addr.slice(2, 8), 16) % 360;
 }
 
-function pinInitials(s: PressedSecond): string {
-  if (s.ensName) {
-    return s.ensName.split(".")[0].slice(0, 2).toUpperCase();
-  }
-  return s.holderAddress.slice(2, 4).toUpperCase();
+function holderInitials(addr: string, ensName: string | null): string {
+  if (ensName) return ensName.replace('.eth', '').slice(0, 2).toLowerCase();
+  return addr.slice(2, 4).toLowerCase();
 }
 
 const TRACK_HEIGHT = 48;
@@ -286,7 +284,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
             const el = timelineRef.current?.querySelector(sel) as HTMLElement | null;
             el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
           }}
-          className="absolute right-2 bottom-2 text-xs text-white/40 hover:text-white/70 transition-colors"
+          className="absolute right-2 bottom-2 text-caption text-white/40 hover:text-white/70 transition-colors"
         >
           jump to now
         </button>
@@ -294,7 +292,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
       </div>
 
       {/* Timeline legend */}
-      <div className="flex justify-between mt-2 text-white/40 text-xs">
+      <div className="flex justify-between mt-2 text-white/40 text-caption">
         <div className="flex gap-4">
           <span className="flex items-center gap-1">
             <span className="w-1 h-4 bg-white/60 inline-block rounded-sm" /> pressed
@@ -320,10 +318,14 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
               title={`Second #${s.tokenId} — ${s.ensName ?? s.holderAddress}`}
             >
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white/80"
-                style={{ backgroundColor: `hsl(${pinHue(s.holderAddress)}, 40%, 25%)` }}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                style={{
+                  background: `hsl(${addressHue(s.holderAddress)}, 40%, 18%)`,
+                  border: `1px solid hsl(${addressHue(s.holderAddress)}, 60%, 42%)`,
+                  color: `hsl(${addressHue(s.holderAddress)}, 60%, 72%)`,
+                }}
               >
-                {pinInitials(s)}
+                {holderInitials(s.holderAddress, s.ensName)}
               </div>
               <span className="text-[9px] text-white/50">{s.tokenId}</span>
             </button>
@@ -341,13 +343,13 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
           {playing ? "▐▐" : "▶"}
         </button>
 
-        <span className="text-xs text-white/50 tabular-nums flex-shrink-0">
-          {formatTime(elapsedSeconds)} / 4:33
+        <span className="text-caption text-white/40 tabular-nums w-8 text-right flex-shrink-0">
+          {formatTime(elapsedSeconds)}
         </span>
 
-        {/* Progress bar */}
+        {/* Progress bar with scrubber thumb */}
         <div
-          className="flex-1 h-1 bg-white/15 rounded cursor-pointer relative"
+          className="flex-1 h-px bg-white/15 rounded cursor-pointer relative group"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const ratio = (e.clientX - rect.left) / rect.width;
@@ -356,18 +358,24 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
           }}
         >
           <div
-            className="h-full bg-white/70 rounded transition-all"
+            className="h-full bg-white/60 rounded"
             style={{ width: `${(elapsedSeconds / TOTAL_SECONDS) * 100}%` }}
           />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ left: `calc(${(elapsedSeconds / TOTAL_SECONDS) * 100}% - 5px)` }}
+          />
         </div>
+
+        <span className="text-caption text-white/40 tabular-nums w-8 flex-shrink-0">4:33</span>
       </div>
 
       {/* Info panel */}
       {infoToken && (
-        <div className="mt-4 border border-white/10 rounded p-3 text-xs text-white/70">
+        <div className="mt-4 border border-white/10 rounded p-3 text-caption text-white/70">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <div className="text-white font-medium">second #{infoToken}</div>
+              <div className="text-label text-white font-medium">second #{infoToken}</div>
               {infoSecond ? (
                 <>
                   <div>{infoSecond.ensName ?? shortAddress(infoSecond.holderAddress)}</div>
@@ -379,7 +387,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                   </div>
                   {infoSecond.hasAudio && (
                     <a
-                      href={`farcaster://cast?text=${encodeURIComponent(`listen to second #${infoToken} of 273 sleeves — onchain audio by ${infoSecond.ensName ?? shortAddress(infoSecond.holderAddress)}`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
+                      href={`https://warpcast.com/~/compose?text=${encodeURIComponent(`listen to second #${infoToken} of 273 sleeves — onchain audio by ${infoSecond.ensName ?? shortAddress(infoSecond.holderAddress)}`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
                       className="text-[10px] text-meta hover:text-white/60 transition-colors"
                     >
                       share on farcaster →
@@ -387,7 +395,16 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
                   )}
                 </>
               ) : (
-                <div className="text-meta">not yet pressed</div>
+                <div className="text-white/30">
+                  not yet pressed
+                  <a
+                    href="https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3"
+                    target="_blank" rel="noopener noreferrer"
+                    className="block mt-1 text-white/40 hover:text-white/60 transition-colors"
+                  >
+                    mint this second on Highlight →
+                  </a>
+                </div>
               )}
             </div>
             {infoSecond?.hasAudio && (

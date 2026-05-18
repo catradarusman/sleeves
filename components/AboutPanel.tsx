@@ -7,7 +7,7 @@ export default function AboutPanel() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-white/60 leading-relaxed">
+      <p className="text-body text-white/60">
         273 Sleeves holders each own one second of 4′33″ — John Cage&apos;s silent composition.
         press your second and a unique sound is generated onchain from your wallet, your token,
         and the exact block timestamp. no two sounds are the same.
@@ -18,11 +18,11 @@ export default function AboutPanel() {
         style={{ maxHeight: isOpen ? "16rem" : 0 }}
       >
         <div className="space-y-2 pt-1">
-          <p className="text-xs text-white/60 leading-relaxed">
+          <p className="text-body text-white/60">
             once all 273 are pressed, the complete 4′33″ is assembled and airdropped to every
             holder as a CC0 network composition.
           </p>
-          <p className="text-xs text-white/60 leading-relaxed">
+          <p className="text-body text-white/60">
             the sounds are stored fully onchain on Base. forever.
           </p>
         </div>
@@ -30,7 +30,7 @@ export default function AboutPanel() {
 
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="text-xs text-meta hover:text-white/50 transition-colors"
+        className="text-caption text-meta hover:text-white/50 transition-colors"
       >
         {isOpen ? "read less" : "read more"}
       </button>

@@ -101,26 +101,35 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
           )}
         </div>
         <div className="flex justify-between items-baseline">
-          <p className="text-xs text-white/40 tabular-nums">
+          <p className="text-label font-mono text-white/40 tabular-nums">
             {totalPressed} of {TOTAL_SECONDS} pressed
           </p>
-          {totalPressed >= 260 && (
-            <p className="text-xs text-meta">
-              {TOTAL_SECONDS - totalPressed} left
-            </p>
-          )}
-          {totalPressed < 260 && (
-            <p className="text-xs text-white/20">
-              260 — airdrop
-            </p>
-          )}
+          <div className="flex items-baseline gap-3">
+            {totalPressed >= 260 && (
+              <p className="text-caption text-meta">
+                {TOTAL_SECONDS - totalPressed} left
+              </p>
+            )}
+            {totalPressed < 260 && (
+              <p className="text-caption text-white/20">
+                260 — airdrop
+              </p>
+            )}
+            <a
+              href="https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3"
+              target="_blank" rel="noopener noreferrer"
+              className="text-caption text-white/30 hover:text-white/50 transition-colors"
+            >
+              get a sleeve →
+            </a>
+          </div>
         </div>
       </div>
 
       {unpressedIds && unpressedIds.length > 0 && (
         <div className="border border-white/10 rounded p-4 mb-6">
-          <p className="text-xs text-meta mb-1">sleeve #{unpressedIds[0]}</p>
-          <p className="text-sm text-white/60 mb-3">
+          <p className="text-caption text-meta mb-1">sleeve #{unpressedIds[0]}</p>
+          <p className="text-body text-white/60 mb-3">
             {unpressedIds.length === 1
               ? "your second hasn't been pressed yet"
               : `you have ${unpressedIds.length} seconds waiting`}
@@ -128,14 +137,14 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
           {onPressCTA ? (
             <button
               onClick={() => onPressCTA(unpressedIds[0])}
-              className="text-sm text-white hover:text-white/70 transition-colors"
+              className="text-body text-white hover:text-white/70 transition-colors"
             >
               press →
             </button>
           ) : (
             <a
               href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-              className="text-sm text-white hover:text-white/70 transition-colors"
+              className="text-body text-white hover:text-white/70 transition-colors"
             >
               press →
             </a>
@@ -146,7 +155,7 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
       <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />
 
       {usingMock && (
-        <p className="mt-4 text-xs text-meta text-center">
+        <p className="mt-4 text-caption text-meta text-center">
           mock data — contract reads unavailable
         </p>
       )}

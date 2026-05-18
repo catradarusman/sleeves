@@ -2,14 +2,17 @@
 
 import { useEffect, useRef } from "react";
 
+const BAR_COUNT = 40;
+
 type Props = {
   audioBuffer: AudioBuffer | null;
   width?: number;
   height?: number;
   animate?: boolean;
+  visibleBars?: number;
 };
 
-export default function Waveform({ audioBuffer, width = 300, height = 48, animate = false }: Props) {
+export default function Waveform({ audioBuffer, width = 300, height = 48, animate = false, visibleBars }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -33,7 +36,9 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
     }
 
     const data = audioBuffer.getChannelData(0);
-    const barCount = width;
+    const barCount = BAR_COUNT;
+    const barW = Math.floor(width / barCount);
+    const gap = 1;
     const samplesPerBar = Math.floor(data.length / barCount);
     const midY = height / 2;
 
@@ -48,12 +53,23 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
       peaks.push(peak);
     }
 
-    if (!animate) {
-      ctx.fillStyle = "#ccc";
-      for (let i = 0; i < barCount; i++) {
-        const barH = Math.max(1, peaks[i] * height);
-        ctx.fillRect(i, midY - barH / 2, 1, barH);
+    function drawBars(count: number) {
+      ctx!.fillStyle = "#111";
+      ctx!.fillRect(0, 0, width, height);
+      ctx!.fillStyle = "#ccc";
+      for (let i = 0; i < count; i++) {
+        const barH = Math.max(2, peaks[i] * height);
+        ctx!.fillRect(i * barW, midY - barH / 2, barW - gap, barH);
       }
+    }
+
+    if (visibleBars !== undefined) {
+      drawBars(visibleBars);
+      return;
+    }
+
+    if (!animate) {
+      drawBars(barCount);
       return;
     }
 
@@ -64,13 +80,7 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
     function frame(now: number) {
       const elapsed = now - start;
       const revealed = Math.min(barCount, Math.floor((elapsed / duration) * barCount));
-      ctx!.fillStyle = "#111";
-      ctx!.fillRect(0, 0, width, height);
-      ctx!.fillStyle = "#ccc";
-      for (let i = 0; i < revealed; i++) {
-        const barH = Math.max(1, peaks[i] * height);
-        ctx!.fillRect(i, midY - barH / 2, 1, barH);
-      }
+      drawBars(revealed);
       if (revealed < barCount) {
         rafId = requestAnimationFrame(frame);
       }
@@ -78,7 +88,7 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
 
     rafId = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafId);
-  }, [audioBuffer, width, height, animate]);
+  }, [audioBuffer, width, height, animate, visibleBars]);
 
   return (
     <canvas

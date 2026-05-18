@@ -189,7 +189,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
   if (!address) {
     return (
-      <p className="text-xs text-white/40">connect wallet to press your second.</p>
+      <p className="text-caption text-white/40">connect wallet to press your second.</p>
     );
   }
 
@@ -198,7 +198,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
     isLoading || (isPressedData === true && (pressedByData === undefined || audioHex === undefined));
 
   if (stillLoading) {
-    return <p className="text-xs text-meta">loading...</p>;
+    return <p className="text-caption text-meta">loading...</p>;
   }
 
   return (
@@ -207,8 +207,8 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
       {recoveryMode && step === "idle" && (
         <div className="space-y-4 max-w-sm">
           <div className="space-y-1">
-            <p className="text-xs text-white/90">second #{tokenId} is locked — audio unsealed</p>
-            <p className="text-xs text-white/50 leading-relaxed">
+            <p className="text-label text-white/90">second #{tokenId} is locked — audio unsealed</p>
+            <p className="text-body text-white/50">
               your first transaction went through. the second one (sealing the audio) didn&apos;t complete. press below to finish — it only costs one more transaction.
             </p>
           </div>
@@ -227,8 +227,8 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
           {!confirmed && (
             <>
               <div>
-                <p className="text-xs text-white/90">second #{tokenId}</p>
-                <p className="text-xs text-white/50 mt-4 leading-relaxed">
+                <p className="text-label text-white/90">second #{tokenId}</p>
+                <p className="text-body text-white/50 mt-4">
                   second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
                 </p>
               </div>
@@ -238,7 +238,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
               >
                 press it →
               </button>
-              <p className="text-xs text-meta mt-2">
+              <p className="text-caption text-meta mt-2">
                 requires 2 signatures — first locks your position, second seals the sound
               </p>
             </>
@@ -246,7 +246,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
           {confirmed && (
             <div className="space-y-4 max-w-sm">
-              <p className="text-xs text-white/70 leading-relaxed">
+              <p className="text-body text-white/70">
                 this is permanent. your sound will be sealed onchain. you cannot preview it or undo this.
               </p>
 
@@ -257,7 +257,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                   onChange={(e) => setCheckboxChecked(e.target.checked)}
                   className="w-4 h-4 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors flex-shrink-0"
                 />
-                <span className="text-xs text-white/60">i understand, press my second</span>
+                <span className="text-caption text-white/60">i understand, press my second</span>
               </label>
 
               <div className="flex items-center gap-4">
@@ -270,7 +270,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 </button>
                 <button
                   onClick={() => { setConfirmed(false); setCheckboxChecked(false); }}
-                  className="text-xs text-meta hover:text-white/50 transition-colors"
+                  className="text-caption text-meta hover:text-white/50 transition-colors"
                 >
                   go back
                 </button>
@@ -293,7 +293,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                   i === currentIdx ? "border-white animate-pulse" :
                   "border-meta"
                 }`} />
-                <span className="text-xs text-meta">{label}</span>
+                <span className="text-caption text-meta">{label}</span>
               </div>
             ))}
           </div>
@@ -302,7 +302,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
       {(step === "tx1" || step === "generating" || step === "tx2" || step === "done") && (
         <div className="space-y-2">
           <div className="flex items-baseline gap-1.5">
-            <p className="text-xs text-white/60 font-mono">
+            <p className="text-caption text-white/60 font-mono">
               {step === "tx1" && `locking second #${tokenId}...`}
               {step === "generating" && "synthesizing your sound..."}
               {step === "tx2" && "sealing it onchain..."}
@@ -310,7 +310,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             </p>
             {step !== "done" && (
               <span
-                className="text-xs text-white/60 font-mono"
+                className="text-caption text-white/60 font-mono"
                 style={{ animation: "blink 1s step-end infinite" }}
               >
                 _
@@ -318,14 +318,14 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             )}
           </div>
           {(step === "tx1" || step === "tx2") && (
-            <p className="text-xs text-meta tabular-nums">
+            <p className="text-caption text-meta tabular-nums">
               {step === "tx1" ? "1 of 2" : "2 of 2"}
             </p>
           )}
           {step === "done" && onComplete && (
             <a
-              href={`farcaster://cast?text=${encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
-              className="text-xs text-white/40 hover:text-white/60 transition-colors"
+              href={`https://warpcast.com/~/compose?text=${encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
+              className="text-caption text-white/40 hover:text-white/60 transition-colors"
             >
               share on farcaster →
             </a>
@@ -335,13 +335,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
       {step === "error" && (
         <div className="space-y-3">
-          <p className="text-xs text-red-400/80 break-words">{error}</p>
+          <p className="text-caption text-red-400/80 break-words">{error}</p>
           <button
             onClick={() => {
               setStep("idle");
               setError(null);
             }}
-            className="text-xs text-meta hover:text-white/60 transition-colors"
+            className="text-caption text-meta hover:text-white/60 transition-colors"
           >
             try again
           </button>
