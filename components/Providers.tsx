@@ -34,7 +34,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   if (isMiniApp && miniAppConfig) {
     return (
       <WagmiProvider config={miniAppConfig}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <ConnectKitProvider theme="midnight">{children}</ConnectKitProvider>
+        </QueryClientProvider>
       </WagmiProvider>
     );
   }
