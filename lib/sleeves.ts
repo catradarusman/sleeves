@@ -15,7 +15,7 @@ export type PressedSecond = {
   hasAudio: boolean;
 };
 
-function getClient() {
+export function getClient() {
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
   const chain = chainId === 84532 ? baseSepolia : base;
   const defaultRpc = chainId === 84532
@@ -134,7 +134,7 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   const pressedIds = tokenIds.filter((_, i) => isPressedResults[i].result === true);
   if (pressedIds.length === 0) return [];
 
-  const [byResults, atResults] = await Promise.all([
+  const [byResults, atResults, audioResults] = await Promise.all([
     multicallChunked(client, pressedIds.map((id) => ({
       address: SOUND_CONTRACT_ADDRESS,
       abi: SLEEVES_SOUND_ABI,
@@ -145,6 +145,12 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
       address: SOUND_CONTRACT_ADDRESS,
       abi: SLEEVES_SOUND_ABI,
       functionName: "pressedAt" as const,
+      args: [BigInt(id)] as const,
+    }))),
+    multicallChunked(client, pressedIds.map((id) => ({
+      address: SOUND_CONTRACT_ADDRESS,
+      abi: SLEEVES_SOUND_ABI,
+      functionName: "getAudio" as const,
       args: [BigInt(id)] as const,
     }))),
   ]);
@@ -159,7 +165,7 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
     holderAddress: addresses[i],
     ensName: ensMap.get(addresses[i]) ?? null,
     pressedAt: Number(atResults[i].result ?? BigInt(0)),
-    hasAudio: true, // audio is fetched lazily by GalleryPlayer.fetchBuffer
+    hasAudio: ((audioResults[i].result as string | undefined) ?? "0x").length > 2,
   }));
 }
 

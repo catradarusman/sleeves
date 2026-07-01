@@ -11,6 +11,8 @@ type Props = {
 export default function PressDrawer({ tokenId, onClose }: Props) {
   const [isMobile, setIsMobile] = useState(false);
   const [visible, setVisible] = useState(false);
+  // Keeps the panel mounted through its slide-out so the exit transition plays.
+  const [mountedTokenId, setMountedTokenId] = useState<number | null>(tokenId);
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 640);
@@ -19,17 +21,20 @@ export default function PressDrawer({ tokenId, onClose }: Props) {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Trigger slide-in after mount
+  // Trigger slide-in on open, slide-out then unmount on close
   useEffect(() => {
     if (tokenId !== null) {
+      setMountedTokenId(tokenId);
       const id = setTimeout(() => setVisible(true), 10);
       return () => clearTimeout(id);
     } else {
       setVisible(false);
+      const id = setTimeout(() => setMountedTokenId(null), 300);
+      return () => clearTimeout(id);
     }
   }, [tokenId]);
 
-  if (tokenId === null) return null;
+  if (mountedTokenId === null) return null;
 
   const panelStyle = isMobile
     ? {
@@ -48,20 +53,22 @@ export default function PressDrawer({ tokenId, onClose }: Props) {
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
         onClick={onClose}
       />
       <div className={panelClass} style={panelStyle}>
         <div className="flex items-center justify-between mb-6">
-          <span className="text-xs text-white/50">second #{tokenId} of 273</span>
+          <span className="text-xs text-white/50">second #{mountedTokenId} of 273</span>
           <button
             onClick={onClose}
-            className="text-xs text-meta hover:text-white/60 transition-colors"
+            aria-label="Close"
+            className="w-10 h-10 -m-2 flex items-center justify-center text-base text-meta hover:text-white/60 transition-[color,transform] active:scale-[0.96]"
           >
             ×
           </button>
         </div>
-        <PressFlow tokenId={tokenId} onComplete={onClose} />
+        <PressFlow tokenId={mountedTokenId} onComplete={onClose} />
       </div>
     </>
   );

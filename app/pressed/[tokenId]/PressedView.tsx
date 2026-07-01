@@ -4,23 +4,15 @@ import { useAccount, useReadContract } from "wagmi";
 import { useRef, useState, useEffect } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { isInMiniApp } from "@/lib/miniapp";
-import { createPublicClient, http } from "viem";
-import { base, baseSepolia } from "viem/chains";
 import Waveform from "@/components/Waveform";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
+import { getClient } from "@/lib/sleeves";
 import { decodeOgg } from "@/lib/audio";
 import { TOTAL_SECONDS } from "@/constants";
 
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
 
-const publicClient = createPublicClient({
-  chain: Number(process.env.NEXT_PUBLIC_CHAIN_ID) === 84532 ? baseSepolia : base,
-  transport: http(
-    Number(process.env.NEXT_PUBLIC_CHAIN_ID) === 84532
-      ? "https://sepolia.base.org"
-      : "https://mainnet.base.org"
-  ),
-});
+const publicClient = getClient();
 
 function shortAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
@@ -207,7 +199,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
             <img
               src="/sleeve-art.gif"
               alt="your sleeve"
-              className="w-20 h-20 rounded object-cover opacity-70 flex-shrink-0"
+              className="w-20 h-20 rounded object-cover opacity-70 flex-shrink-0 outline outline-1 -outline-offset-1 outline-white/10"
             />
             <div className="space-y-3 flex-1">
               <div
@@ -253,7 +245,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
             {pressedAtData ? ` · ${formatDate(pressedAtData as bigint)}` : ""}
           </p>
           {totalPressedData !== undefined && (
-            <p>{Number(totalPressedData)} of {TOTAL_SECONDS} pressed</p>
+            <p className="tabular-nums">{Number(totalPressedData)} of {TOTAL_SECONDS} pressed</p>
           )}
         </div>
 

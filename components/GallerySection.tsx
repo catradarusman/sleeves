@@ -140,14 +140,14 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
           {onPressCTA ? (
             <button
               onClick={() => onPressCTA(unpressedIds[0])}
-              className="w-full mt-3 py-2.5 text-sm font-mono text-black bg-white rounded hover:bg-white/90 transition-colors"
+              className="w-full mt-3 py-2.5 text-sm font-mono text-black bg-white rounded hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
             >
               press your second →
             </button>
           ) : (
             <a
               href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-              className="block w-full mt-3 py-2.5 text-sm font-mono text-center text-black bg-white rounded hover:bg-white/90 transition-colors"
+              className="block w-full mt-3 py-2.5 text-sm font-mono text-center text-black bg-white rounded hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
             >
               press your second →
             </a>

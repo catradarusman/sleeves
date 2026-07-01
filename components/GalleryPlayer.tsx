@@ -59,6 +59,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const scheduledNodesRef = useRef<AudioBufferSourceNode[]>([]);
+  const scheduledSecondsRef = useRef<Set<number>>(new Set());
   const bufferCacheRef = useRef<Map<number, AudioBuffer>>(new Map());
   const playStartTimeRef = useRef<number>(0); // AudioContext time when playback started
   const playOffsetRef = useRef<number>(0); // which second we started at (0-indexed offset)
@@ -77,6 +78,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
       try { n.stop(); } catch {}
     });
     scheduledNodesRef.current = [];
+    scheduledSecondsRef.current.clear();
   }, []);
 
   const stopPlayback = useCallback(() => {
@@ -113,9 +115,11 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
     for (let i = 0; i < LOOKAHEAD; i++) {
       const secondIdx = fromSecond + i; // 0-based
       if (secondIdx >= TOTAL_SECONDS) break;
+      if (scheduledSecondsRef.current.has(secondIdx)) continue; // already scheduled — avoid overlap
       const tokenId = secondIdx + 1;
       const offsetTime = ctxStartTime + i;
       const buffer = await fetchBuffer(tokenId);
+      scheduledSecondsRef.current.add(secondIdx);
       if (buffer) {
         const node = ctx.createBufferSource();
         node.buffer = buffer;
@@ -284,7 +288,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
             const el = timelineRef.current?.querySelector(sel) as HTMLElement | null;
             el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
           }}
-          className="absolute right-2 bottom-2 text-caption text-white/40 hover:text-white/70 transition-colors"
+          className="absolute right-2 bottom-2 min-h-[40px] flex items-center text-caption text-white/40 hover:text-white/70 transition-colors"
         >
           jump to now
         </button>
@@ -337,7 +341,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
       <div className="flex items-center gap-3 mt-3">
         <button
           onClick={handlePlayPause}
-          className="w-11 h-11 flex-shrink-0 flex items-center justify-center border border-white/40 rounded hover:border-white/70 transition-colors text-sm"
+          className="w-11 h-11 flex-shrink-0 flex items-center justify-center border border-white/40 rounded hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] text-sm"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? "▐▐" : "▶"}
@@ -410,7 +414,7 @@ export default function GalleryPlayer({ pressedSeconds, totalPressed }: GalleryP
             {infoSecond?.hasAudio && (
               <button
                 onClick={() => handleSeek(infoToken)}
-                className="text-white/50 hover:text-white transition-colors text-lg leading-none"
+                className="w-10 h-10 -m-2 flex items-center justify-center text-white/50 hover:text-white transition-[color,transform] active:scale-[0.96] text-lg leading-none"
                 aria-label="Play this second"
               >
                 ▶

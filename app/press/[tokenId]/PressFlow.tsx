@@ -3,22 +3,15 @@
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createPublicClient, decodeEventLog, http, toHex } from "viem";
-import { base, baseSepolia } from "viem/chains";
+import { decodeEventLog, toHex } from "viem";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
+import { getClient } from "@/lib/sleeves";
 
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
 import { deriveSeed } from "@/lib/seed";
 import { generateAudio } from "@/lib/audio";
 
-const publicClient = createPublicClient({
-  chain: Number(process.env.NEXT_PUBLIC_CHAIN_ID) === 84532 ? baseSepolia : base,
-  transport: http(
-    Number(process.env.NEXT_PUBLIC_CHAIN_ID) === 84532
-      ? "https://sepolia.base.org"
-      : "https://mainnet.base.org"
-  ),
-});
+const publicClient = getClient();
 
 type Step = "idle" | "tx1" | "generating" | "tx2" | "done" | "error";
 
@@ -208,13 +201,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
         <div className="space-y-4 max-w-sm">
           <div className="space-y-1">
             <p className="text-label text-white/90">second #{tokenId} is locked — audio unsealed</p>
-            <p className="text-body text-white/50">
+            <p className="text-body text-white/50 text-pretty">
               your first transaction went through. the second one (sealing the audio) didn&apos;t complete. press below to finish — it only costs one more transaction.
             </p>
           </div>
           <button
             onClick={handleResume}
-            className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200"
+            className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-[border-color,transform] duration-200 active:scale-[0.96]"
           >
             seal the audio →
           </button>
@@ -228,13 +221,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             <>
               <div>
                 <p className="text-label text-white/90">second #{tokenId}</p>
-                <p className="text-body text-white/50 mt-4">
+                <p className="text-body text-white/50 mt-4 text-pretty">
                   second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
                 </p>
               </div>
               <button
                 onClick={() => setConfirmed(true)}
-                className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color] duration-200"
+                className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color,transform] duration-200 active:scale-[0.96]"
               >
                 press it →
               </button>
@@ -246,7 +239,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
           {confirmed && (
             <div className="space-y-4 max-w-sm">
-              <p className="text-body text-white/70">
+              <p className="text-body text-white/70 text-pretty">
                 this is permanent. your sound will be sealed onchain. you cannot preview it or undo this.
               </p>
 
@@ -264,7 +257,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 <button
                   onClick={handlePress}
                   disabled={!checkboxChecked}
-                  className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
+                  className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-[border-color,opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-20 disabled:cursor-not-allowed"
                 >
                   confirm and press
                 </button>
