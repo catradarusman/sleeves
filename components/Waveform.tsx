@@ -6,7 +6,9 @@ const BAR_COUNT = 40;
 
 type Props = {
   audioBuffer: AudioBuffer | null;
-  /** Fixed CSS width. Omit to fill the parent and follow it on resize. */
+  /** Fixed CSS width. Omit to fill the parent and follow it on resize — the
+   *  parent must have a definite width, or measuring a 100%-wide canvas
+   *  against it feeds back on itself. */
   width?: number;
   height?: number;
   animate?: boolean;
