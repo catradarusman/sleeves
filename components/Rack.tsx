@@ -87,12 +87,15 @@ export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props)
   // to be worth normalising before anything is compared.
   const needle = query.trim().toLowerCase();
   const mine = viewerAddress?.toLowerCase();
+  // Derived, not synced: the toggle unmounts when the wallet disconnects, so a
+  // stored-only flag would leave the filter stuck on with no control to clear it.
+  const minesActive = minesOnly && !!mine;
   const results = pressed.filter(
     (s) =>
-      (!minesOnly || s.holderAddress?.toLowerCase() === mine) &&
+      (!minesActive || s.holderAddress?.toLowerCase() === mine) &&
       (needle === "" || matches(s, needle))
   );
-  const filtering = needle !== "" || minesOnly;
+  const filtering = needle !== "" || minesActive;
 
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
   // A press landing while a late page is open would otherwise strand the view
@@ -151,7 +154,7 @@ export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props)
                 placeholder="find a sleeve — 100, catra.eth, 0x…"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full min-h-[44px] border-b border-paper/20 bg-transparent pb-2 pr-8 text-body text-paper placeholder:text-paper/35 focus:border-paper/60 focus:outline-none transition-colors"
+                className="w-full min-h-[44px] border-b border-paper/20 bg-transparent pb-2 pr-8 text-body text-paper placeholder:text-paper/35 focus:border-paper/60 focus:outline-none transition-colors [&::-webkit-search-cancel-button]:appearance-none"
               />
               {query !== "" && (
                 <button
@@ -189,7 +192,7 @@ export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props)
 
           {results.length === 0 ? (
             <p className="mt-4 text-body text-white/70 text-pretty">
-              {minesOnly && needle === ""
+              {minesActive && needle === ""
                 ? "none of the seconds you hold are pressed yet."
                 : `nothing in the rack matches “${query.trim()}”.`}{" "}
               <button
