@@ -32,6 +32,10 @@ export function usePressedSeconds() {
     queryKey: ["gallery"],
     queryFn: fetchGalleryData,
     refetchInterval: 60_000,
+    // Without this every additional component that reads this query refetches
+    // the whole gallery on mount, because a staleTime of 0 marks the cached
+    // data stale the instant it lands. The interval above still drives updates.
+    staleTime: 60_000,
     // Fail fast and say so, rather than spinning through long backoff.
     retry: 1,
     // navigator.onLine lies often enough that pausing here leaves the surface

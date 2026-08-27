@@ -3,6 +3,7 @@
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ConnectButton from "@/components/ConnectButton";
 import { decodeEventLog, toHex } from "viem";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { getClient } from "@/lib/sleeves";
@@ -202,7 +203,12 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
   if (!address) {
     return (
-      <p className="text-body text-white/60">connect your wallet to press your second.</p>
+      <div className="max-w-xs space-y-3">
+        <p className="text-body text-white/60 text-pretty">
+          connect your wallet to press your second.
+        </p>
+        <ConnectButton variant="primary" />
+      </div>
     );
   }
 
