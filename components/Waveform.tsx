@@ -26,7 +26,7 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
     ctx.fillRect(0, 0, width, height);
 
     if (!audioBuffer) {
-      ctx.strokeStyle = "#444";
+      ctx.strokeStyle = "rgba(232,223,205,0.22)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, height / 2);
@@ -56,7 +56,7 @@ export default function Waveform({ audioBuffer, width = 300, height = 48, animat
     function drawBars(count: number) {
       ctx!.fillStyle = "#111";
       ctx!.fillRect(0, 0, width, height);
-      ctx!.fillStyle = "#ccc";
+      ctx!.fillStyle = "#e8dfcd";
       for (let i = 0; i < count; i++) {
         const barH = Math.max(2, peaks[i] * height);
         ctx!.fillRect(i * barW, midY - barH / 2, barW - gap, barH);

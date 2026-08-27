@@ -6,7 +6,9 @@ const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import ConnectButton from "@/components/ConnectButton";
+import SiteHeader from "@/components/SiteHeader";
+import SleeveImage from "@/components/SleeveImage";
+import { sleeveMeta } from "@/lib/sleeveIndex";
 
 import { getTokensOwnedBy } from "@/lib/sleeves";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
@@ -45,42 +47,31 @@ export default function PressPicker() {
   });
 
   return (
-    <main className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <img src="/sleeve-art.gif" alt="273 Sleeves artwork" className="w-10 h-10 rounded object-cover opacity-80 outline outline-1 -outline-offset-1 outline-white/10" />
-          <div>
-            <h1 className="text-display font-bold uppercase text-white/90 text-balance">
-              <Link href="/" className="hover:text-white/70 transition-colors">273 Sleeves: Sound</Link>
-            </h1>
-            <p className="text-caption text-white/40 mt-0.5">4′33″ onchain · Base</p>
-          </div>
-        </div>
-        <ConnectButton />
-      </div>
+    <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 max-w-lg mx-auto">
+      <SiteHeader />
 
       {!address && (
-        <p className="text-xs text-white/40">connect wallet to press your second.</p>
+        <p className="text-body text-white/60">connect your wallet to press your second.</p>
       )}
 
       {address && (loading || tokenIds === null) && (
-        <p className="text-xs text-meta">loading...</p>
+        <p className="text-body text-white/60">reading Base…</p>
       )}
 
       {address && tokenIds !== null && (
         <div className="space-y-6">
-          <p className="text-xs text-white/70">choose a second to press</p>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+          <p className="text-body text-white/60">choose a second to press</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {tokenIds.map((id, i) => {
               const pressed = isPressedData?.[i]?.result === true;
               if (pressed) {
                 return (
-                  <div
-                    key={id}
-                    className="text-xs text-meta border border-white/10 px-3 py-2 text-center"
-                  >
-                    <span className="block">#{id}</span>
-                    <span className="block text-[10px] mt-0.5">pressed</span>
+                  <div key={id} className="opacity-50">
+                    <SleeveImage src={sleeveMeta(id)?.image ?? null} size={320} sizes="(min-width: 640px) 33vw, 45vw" className="w-full" />
+                    <p className="mt-2 text-body text-white/60">
+                      sleeve #{sleeveMeta(id)?.second ?? id}
+                    </p>
+                    <p className="text-caption text-paper/60">pressed</p>
                   </div>
                 );
               }
@@ -88,10 +79,18 @@ export default function PressPicker() {
                 <Link
                   key={id}
                   href={`/press/${id}`}
-                  className="text-xs text-white border border-white/40 px-3 py-2 text-center hover:border-white/70 transition-colors"
+                  className="group rounded transition-transform active:scale-[0.98]"
                 >
-                  <span className="block">#{id}</span>
-                  <span className="block text-[10px] mt-0.5 text-white/40">press</span>
+                  <SleeveImage
+                    src={sleeveMeta(id)?.image ?? null}
+                    size={320}
+                    sizes="(min-width: 640px) 33vw, 45vw"
+                    className="w-full brightness-[0.92] transition-[filter] duration-500 group-hover:brightness-110"
+                  />
+                  <p className="mt-2 text-body text-white/90">
+                    sleeve #{sleeveMeta(id)?.second ?? id}
+                  </p>
+                  <p className="text-caption text-paper/60">press this second →</p>
                 </Link>
               );
             })}

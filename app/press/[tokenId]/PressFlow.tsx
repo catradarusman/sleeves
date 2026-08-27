@@ -8,6 +8,8 @@ import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { getClient } from "@/lib/sleeves";
 
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
+import SleeveImage from "@/components/SleeveImage";
+import { sleeveMeta } from "@/lib/sleeveIndex";
 import { deriveSeed } from "@/lib/seed";
 import { generateAudio } from "@/lib/audio";
 
@@ -172,17 +174,35 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
     }
   }
 
+  // Maps wallet and RPC failures to sentences. Never prints a raw viem message.
   function toUserError(err: unknown): string {
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? err.message : "";
+    const name = err instanceof Error ? err.name : "";
+
     if (msg.startsWith("audio too large")) {
-      return "audio generation failed — please try again.";
+      return "making the sound failed. try again.";
     }
-    return msg;
+    if (name === "UserRejectedRequestError" || /user rejected|user denied|rejected the request/i.test(msg)) {
+      return "you cancelled it. nothing was sent.";
+    }
+    if (/insufficient funds/i.test(msg)) {
+      return "not enough ETH on base to pay for gas.";
+    }
+    if (/chain mismatch|does not match the target chain|switch chain|chain not configured/i.test(msg)) {
+      return "your wallet is on the wrong network. switch to base and try again.";
+    }
+    if (name === "HttpRequestError" || /fetch failed|failed to fetch|timed out|network error/i.test(msg)) {
+      return "base didn't answer. check your connection and try again.";
+    }
+    if (/execution reverted|reverted/i.test(msg)) {
+      return "the contract refused this press. this second may already be pressed.";
+    }
+    return "the transaction didn't go through. try again.";
   }
 
   if (!address) {
     return (
-      <p className="text-caption text-white/40">connect wallet to press your second.</p>
+      <p className="text-body text-white/60">connect your wallet to press your second.</p>
     );
   }
 
@@ -191,25 +211,46 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
     isLoading || (isPressedData === true && (pressedByData === undefined || audioHex === undefined));
 
   if (stillLoading) {
-    return <p className="text-caption text-meta">loading...</p>;
+    return <p className="text-body text-white/60">reading Base…</p>;
   }
+
+  const meta = sleeveMeta(tokenId);
+  const sleeveNumber = meta ? `#${meta.second}` : `token #${tokenId}`;
 
   return (
     <div className="space-y-6 max-w-sm">
+      {/* Your sleeve, before you press it. The art is the reason to care. */}
+      {step === "idle" && (
+        <div className="flex items-end gap-4">
+          <SleeveImage src={meta?.image ?? null} size={200} priority className="w-28 flex-shrink-0" />
+          <div className="pb-1">
+            <p className="text-caption uppercase tracking-[0.28em] text-paper/60">your sleeve</p>
+            <p className="mt-1 text-[44px] font-medium leading-[0.85] tracking-[-0.04em] text-paper">
+              {String(meta?.second ?? tokenId).padStart(3, "0")}
+            </p>
+            {meta && (
+              <p className="mt-2 text-caption text-paper/60">
+                plays at {Math.floor((meta.second - 1) / 60)}:{String((meta.second - 1) % 60).padStart(2, "0")} of 4′33″
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recovery mode: pressed but audio not sealed */}
       {recoveryMode && step === "idle" && (
         <div className="space-y-4 max-w-sm">
           <div className="space-y-1">
-            <p className="text-label text-white/90">second #{tokenId} is locked — audio unsealed</p>
-            <p className="text-body text-white/50 text-pretty">
-              your first transaction went through. the second one (sealing the audio) didn&apos;t complete. press below to finish — it only costs one more transaction.
+            <p className="text-label text-white/90">sleeve {sleeveNumber} is reserved. the sound isn&apos;t saved.</p>
+            <p className="text-body text-white/60 text-pretty">
+              your first transaction went through. the second one, which saves the sound onchain, did not. one transaction left.
             </p>
           </div>
           <button
             onClick={handleResume}
-            className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-[border-color,transform] duration-200 active:scale-[0.96]"
+            className="text-body border border-white/40 rounded px-6 py-2 min-w-[120px] hover:border-white/70 transition-[border-color,transform] duration-200 active:scale-[0.96]"
           >
-            seal the audio →
+            save the sound →
           </button>
         </div>
       )}
@@ -220,27 +261,27 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
           {!confirmed && (
             <>
               <div>
-                <p className="text-label text-white/90">second #{tokenId}</p>
-                <p className="text-body text-white/50 mt-4 text-pretty">
-                  second #{tokenId} of 273 is yours. press it and a sound is born — derived from this moment, this block, this wallet. you&apos;ll never hear it before it exists. that&apos;s the point.
+                <p className="text-label text-white/90">sleeve {sleeveNumber}</p>
+                <p className="text-body text-white/60 mt-4 text-pretty">
+                  sleeve {sleeveNumber} of 273 is yours. press it and a sound exists, derived from this block, this wallet, this moment. you hear it after it exists, never before. that is the point.
                 </p>
               </div>
               <button
                 onClick={() => setConfirmed(true)}
-                className="text-xs border border-white/60 px-6 py-2 min-w-[120px] hover:border-white transition-[border-color,transform] duration-200 active:scale-[0.96]"
+                className="text-body rounded border border-paper px-6 py-2 min-w-[120px] text-paper transition-[background-color,color,transform] duration-200 hover:bg-paper hover:text-[#111] active:scale-[0.96]"
               >
                 press it →
               </button>
-              <p className="text-caption text-meta mt-2">
-                requires 2 signatures — first locks your position, second seals the sound
+              <p className="text-caption text-white/60 mt-2">
+                2 signatures. the first reserves your second. the second saves the sound onchain.
               </p>
             </>
           )}
 
           {confirmed && (
             <div className="space-y-4 max-w-sm">
-              <p className="text-body text-white/70 text-pretty">
-                this is permanent. your sound will be sealed onchain. you cannot preview it or undo this.
+              <p className="text-body text-white/60 text-pretty">
+                permanent. saved onchain. no preview. no undo.
               </p>
 
               <label className="flex items-center gap-3 cursor-pointer p-3 -mx-3 rounded hover:bg-white/5">
@@ -250,20 +291,20 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                   onChange={(e) => setCheckboxChecked(e.target.checked)}
                   className="w-4 h-4 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors flex-shrink-0"
                 />
-                <span className="text-caption text-white/60">i understand, press my second</span>
+                <span className="text-body text-white/60">i understand, press my second</span>
               </label>
 
               <div className="flex items-center gap-4">
                 <button
                   onClick={handlePress}
                   disabled={!checkboxChecked}
-                  className="text-xs border border-white/40 px-6 py-2 min-w-[120px] hover:border-white/60 transition-[border-color,opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-20 disabled:cursor-not-allowed"
+                  className="text-body border border-white/40 rounded px-6 py-2 min-w-[120px] hover:border-white/70 transition-[border-color,opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   confirm and press
                 </button>
                 <button
                   onClick={() => { setConfirmed(false); setCheckboxChecked(false); }}
-                  className="text-caption text-meta hover:text-white/50 transition-colors"
+                  className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
                 >
                   go back
                 </button>
@@ -275,7 +316,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
       {/* Step indicators (shared by both normal and resume flows) */}
       {(step === "tx1" || step === "generating" || step === "tx2" || step === "done") && (() => {
-        const STEPS = ["lock", "generate", "seal"] as const;
+        const STEPS = ["reserve", "make sound", "save onchain"] as const;
         const currentIdx = step === "tx1" ? 0 : step === "generating" ? 1 : step === "tx2" ? 2 : 3;
         return (
           <div className="flex gap-6 justify-center mb-6">
@@ -286,7 +327,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                   i === currentIdx ? "border-white animate-pulse" :
                   "border-meta"
                 }`} />
-                <span className="text-caption text-meta">{label}</span>
+                <span className="text-caption text-white/60">{label}</span>
               </div>
             ))}
           </div>
@@ -296,10 +337,10 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
         <div className="space-y-2">
           <div className="flex items-baseline gap-1.5">
             <p className="text-caption text-white/60 font-mono">
-              {step === "tx1" && `locking second #${tokenId}...`}
-              {step === "generating" && "synthesizing your sound..."}
-              {step === "tx2" && "sealing it onchain..."}
-              {step === "done" && `second #${tokenId} is sealed.`}
+              {step === "tx1" && `reserving sleeve ${sleeveNumber}…`}
+              {step === "generating" && "making your sound…"}
+              {step === "tx2" && "saving it onchain…"}
+              {step === "done" && `sleeve ${sleeveNumber} is saved onchain.`}
             </p>
             {step !== "done" && (
               <span
@@ -311,14 +352,14 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             )}
           </div>
           {(step === "tx1" || step === "tx2") && (
-            <p className="text-caption text-meta tabular-nums">
+            <p className="text-caption text-white/60 tabular-nums">
               {step === "tx1" ? "1 of 2" : "2 of 2"}
             </p>
           )}
           {step === "done" && onComplete && (
             <a
-              href={`https://warpcast.com/~/compose?text=${encodeURIComponent(`i pressed second #${tokenId} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
-              className="text-caption text-white/40 hover:text-white/60 transition-colors"
+              href={`https://warpcast.com/~/compose?text=${encodeURIComponent(`i pressed sleeve ${sleeveNumber} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
+              className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
             >
               share on farcaster →
             </a>
@@ -328,13 +369,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
 
       {step === "error" && (
         <div className="space-y-3">
-          <p className="text-caption text-red-400/80 break-words">{error}</p>
+          <p className="text-body text-red-400 break-words">{error}</p>
           <button
             onClick={() => {
               setStep("idle");
               setError(null);
             }}
-            className="text-caption text-meta hover:text-white/60 transition-colors"
+            className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
           >
             try again
           </button>

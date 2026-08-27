@@ -8,6 +8,8 @@ import Waveform from "@/components/Waveform";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { getClient } from "@/lib/sleeves";
 import { decodeOgg } from "@/lib/audio";
+import SleeveImage from "@/components/SleeveImage";
+import { sleeveMeta } from "@/lib/sleeveIndex";
 import { TOTAL_SECONDS } from "@/constants";
 
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
@@ -26,8 +28,9 @@ function formatDate(ts: bigint): string {
   });
 }
 
-function formatTokenTime(tokenId: number): string {
-  const secs = tokenId - 1;
+// Takes the sleeve's own second, not the token id: the two differ.
+function formatTokenTime(second: number): string {
+  const secs = second - 1;
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -170,7 +173,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   }
 
   if (!pressedBy) {
-    return <p className="text-caption text-meta">loading...</p>;
+    return <p className="text-body text-white/60">reading Base…</p>;
   }
 
   const hasAudio = audioHex !== null && audioHex.length > 2;
@@ -182,7 +185,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   // Screen D: you pressed it
   if (isOwn) {
     async function handleShare() {
-      const text = `i pressed second #${tokenId} of 273 sleeves`;
+      const text = `i pressed sleeve #${sleeveMeta(tokenId)?.second ?? tokenId} of 273 sleeves`;
       const embedUrl = `https://sleeves.catra.fyi`;
       if (await isInMiniApp()) {
         await sdk.actions.composeCast({ text, embeds: [embedUrl] });
@@ -196,10 +199,11 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       <div className="space-y-6 max-w-sm">
         {hasAudio && (
           <div className="flex items-start gap-4">
-            <img
-              src="/sleeve-art.gif"
-              alt="your sleeve"
-              className="w-20 h-20 rounded object-cover opacity-70 flex-shrink-0 outline outline-1 -outline-offset-1 outline-white/10"
+            <SleeveImage
+              src={sleeveMeta(tokenId)?.image ?? null}
+              size={220}
+              priority
+              className="w-28 sm:w-36 flex-shrink-0 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
             />
             <div className="space-y-3 flex-1">
               <div
@@ -212,18 +216,18 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
                 className="text-label text-white transition-opacity duration-500"
                 style={{ opacity: copyVisible ? 1 : 0 }}
               >
-                second #{tokenId} is sealed.
+                sleeve #{sleeveMeta(tokenId)?.second ?? tokenId} is saved onchain.
               </p>
               <p
-                className="text-caption text-white/40 transition-opacity duration-500"
+                className="text-body text-white/60 transition-opacity duration-500"
                 style={{ opacity: sublineVisible ? 1 : 0 }}
               >
-                it will play at {formatTokenTime(tokenId)} in the 4′33″.
+                it plays at {formatTokenTime(sleeveMeta(tokenId)?.second ?? tokenId)} in the 4′33″.
               </p>
               <button
                 onClick={togglePlay}
                 disabled={!audioBuffer}
-                className="text-caption border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+                className="text-body border border-white/40 rounded px-3 py-1.5 hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {playing ? "stop" : "play"}
               </button>
@@ -232,14 +236,14 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
         )}
 
         {!hasAudio && (
-          <p className="text-caption text-meta">
+          <p className="text-body text-white/60">
             {audioPollExhausted
-              ? "audio is being sealed onchain — refresh in a moment."
-              : "loading audio..."}
+              ? "your sound is still being saved onchain. refresh in a moment."
+              : "loading your sound…"}
           </p>
         )}
 
-        <div className="text-caption text-white/40 space-y-1">
+        <div className="text-body text-white/60 space-y-1">
           <p>
             pressed by you
             {pressedAtData ? ` · ${formatDate(pressedAtData as bigint)}` : ""}
@@ -251,7 +255,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
         <button
           onClick={handleShare}
-          className="block text-caption text-white/50 hover:text-white transition-opacity duration-500 text-left"
+          className="block text-body text-white/60 rounded hover:text-white/90 transition-opacity duration-500 text-left"
           style={{ opacity: shareVisible ? 1 : 0, pointerEvents: shareVisible ? "auto" : "none" }}
         >
           share on farcaster →
@@ -263,11 +267,22 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   // Screen E: someone else pressed it
   return (
     <div className="space-y-6 max-w-sm">
-      <div>
-        <p className="text-label text-white">second #{tokenId}</p>
-        <p className="text-caption text-white/50 mt-1">
-          pressed by {shortAddress(pressedBy as string)}
-        </p>
+      <div className="flex items-end gap-4">
+        <SleeveImage
+          src={sleeveMeta(tokenId)?.image ?? null}
+          size={220}
+          priority
+          className="w-28 sm:w-36 flex-shrink-0 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
+        />
+        <div className="pb-1">
+          <p className="text-caption uppercase tracking-[0.28em] text-paper/60">now showing</p>
+          <p className="mt-1 text-[44px] font-medium leading-[0.85] tracking-[-0.04em] text-paper">
+            {String(sleeveMeta(tokenId)?.second ?? tokenId).padStart(3, "0")}
+          </p>
+          <p className="text-body text-white/60 mt-2">
+            pressed by {shortAddress(pressedBy as string)}
+          </p>
+        </div>
       </div>
 
       {hasAudio && (
@@ -276,7 +291,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           <button
             onClick={togglePlay}
             disabled={!audioBuffer}
-            className="text-caption border border-white/40 px-3 py-1.5 hover:border-white/60 transition-colors disabled:opacity-30"
+            className="text-body border border-white/40 rounded px-3 py-1.5 hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {playing ? "stop" : "play"}
           </button>
@@ -284,20 +299,20 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       )}
 
       {!hasAudio && (
-        <p className="text-caption text-meta">
+        <p className="text-body text-white/60">
           {audioPollExhausted
-            ? "audio is being sealed onchain — refresh in a moment."
-            : "loading audio..."}
+            ? "the sound is still being saved onchain. refresh in a moment."
+            : "loading the sound…"}
         </p>
       )}
 
-      <p className="text-caption text-white/40">
+      <p className="text-body text-white/60">
         pressed on {pressedAtData ? formatDate(pressedAtData as bigint) : "—"}
       </p>
 
       <a
         href="/"
-        className="text-caption text-white/40 hover:text-white transition-colors"
+        className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
       >
         view the full composition →
       </a>

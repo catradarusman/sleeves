@@ -14,6 +14,10 @@ const config: Config = {
         primary: "rgba(255,255,255,0.92)",
         secondary: "rgba(255,255,255,0.55)",
         meta: "rgba(255,255,255,0.38)",
+        // Sampled from the sleeve stock itself. One meaning only: sound that
+        // exists and is playing.
+        accent: "#e8dfcd",
+        paper: "#e8dfcd",
       },
       fontFamily: {
         mono: ["var(--font-geist-mono)", "monospace"],

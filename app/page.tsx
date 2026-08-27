@@ -1,50 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import ConnectButton from "@/components/ConnectButton";
+import dynamic from "next/dynamic";
+import SiteHeader from "@/components/SiteHeader";
 import GallerySection from "@/components/GallerySection";
 import AboutPanel from "@/components/AboutPanel";
-import PressDrawer from "@/components/PressDrawer";
 import { SOUND_CONTRACT } from "@/constants";
+
+// Keeps PressFlow (and the audio pipeline it imports) out of the home bundle.
+const PressDrawer = dynamic(() => import("@/components/PressDrawer"), { ssr: false });
 
 export default function Home() {
   const [pressTokenId, setPressTokenId] = useState<number | null>(null);
 
   return (
-    <main className="min-h-screen px-4 pt-4 pb-6 max-w-lg mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <img src="/sleeve-art.gif" alt="273 Sleeves artwork" className="w-10 h-10 rounded object-cover opacity-80 outline outline-1 -outline-offset-1 outline-white/10" />
-          <div>
-            <h1 className="text-display font-bold uppercase text-white/90 text-balance">
-              <Link href="/" className="hover:text-white/70 transition-colors">273 Sleeves: Sound</Link>
-            </h1>
-            <p className="text-caption text-white/40 mt-0.5">4′33″ onchain · Base</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <ConnectButton />
-        </div>
-      </div>
+    <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+      <SiteHeader />
 
-      <p className="text-body text-white/40 mb-4">
-        273 seconds of silence, pressed onchain one by one.
+      <p className="mb-10 max-w-[46ch] text-body leading-[1.85] text-white/70 text-pretty">
+        273 seconds of silence. pressed one at a time, onchain.
       </p>
 
-      <GallerySection onPressCTA={(id) => setPressTokenId(id)} />
+      <GallerySection onPressCTA={(id) => setPressTokenId(id)} sidebar={<AboutPanel />} />
 
-      <div className="mt-8">
-        <AboutPanel />
-      </div>
 
-      <footer className="mt-16 text-xs text-meta flex justify-between">
+      <footer className="mt-20 flex justify-between border-t border-paper/15 pt-5 text-caption uppercase tracking-[0.16em] text-paper/60">
         <span>273 Sleeves · Base Mainnet</span>
         <a
           href={`https://basescan.org/address/${SOUND_CONTRACT}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-white/50 transition-colors"
+          className="rounded hover:text-paper transition-colors"
         >
           contract ↗
         </a>
