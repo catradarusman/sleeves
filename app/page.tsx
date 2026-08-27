@@ -17,7 +17,7 @@ export default function Home() {
     <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 lg:px-8 max-w-5xl mx-auto">
       <SiteHeader />
 
-      <p className="mb-10 max-w-[46ch] text-body leading-[1.85] text-white/70 text-pretty">
+      <p className="mb-10 max-w-[56ch] text-body leading-[1.85] text-white/70 text-pretty">
         273 seconds of silence. pressed one at a time, onchain.
       </p>
 
