@@ -8,6 +8,8 @@ type Props = {
   emptyLabel?: string;
   /** Rendered width in CSS pixels. Drives what next/image downscales to. */
   size: number;
+  /** Overrides the sizes hint for tiles that paint fluid rather than fixed. */
+  sizes?: string;
   priority?: boolean;
   className?: string;
 };
@@ -16,7 +18,7 @@ type Props = {
  * A sleeve, shrink-wrapped. The sheen is a screen-blended gradient rather than
  * an image overlay, so it costs nothing and adapts to whatever art sits under it.
  */
-export default function SleeveImage({ src, size, emptyLabel, priority = false, className = "" }: Props) {
+export default function SleeveImage({ src, size, sizes, emptyLabel, priority = false, className = "" }: Props) {
   return (
     <span
       className={`relative block aspect-square overflow-hidden rounded-[2px] ${className}`}
@@ -41,7 +43,7 @@ export default function SleeveImage({ src, size, emptyLabel, priority = false, c
           width={size}
           height={size}
           priority={priority}
-          sizes={`${size}px`}
+          sizes={sizes ?? `${size}px`}
           quality={70}
           className="h-full w-full object-cover"
         />

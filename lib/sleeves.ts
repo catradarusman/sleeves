@@ -37,7 +37,9 @@ export function getClient() {
 }
 
 function getMainnetClient() {
-  const rpc = process.env.NEXT_PUBLIC_ETH_RPC_URL ?? "https://eth.llamarpc.com";
+  // Must send CORS headers: this runs in the browser. llamarpc does not, which
+  // silently killed every ENS lookup and left holders showing as raw hex.
+  const rpc = process.env.NEXT_PUBLIC_ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
   // ENS is a nicety: fail fast and fall back to the raw address.
   return createPublicClient({
     chain: mainnet,

@@ -1,6 +1,8 @@
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const RPC = "https://base-rpc.publicnode.com";
 const SLEEVES = "0x4428be530724b5ee47e4cb0061f77024933a4dc3";
@@ -39,6 +41,8 @@ for (let i = 0; i < uris.length; i += 12) {
   process.stdout.write(`meta ${done}/${uris.length}\r`);
 }
 console.log();
-fs.writeFileSync("lib/sleeve-index.json", JSON.stringify(out, null, 0));
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "lib", "sleeve-index.json");
+fs.writeFileSync(OUT, JSON.stringify(out, null, 0));
 const seconds = Object.values(out).map((v) => v.second);
+console.log("wrote:", OUT);
 console.log("indexed:", Object.keys(out).length, "unique seconds:", new Set(seconds).size, "min/max:", Math.min(...seconds), Math.max(...seconds));

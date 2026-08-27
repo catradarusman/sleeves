@@ -2,12 +2,28 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getAllPressedSeconds, getTotalPressed } from "@/lib/sleeves";
+import { fetchSleeveMeta } from "@/lib/sleeveMetaFallback";
 
 async function fetchGalleryData() {
   const [pressedSeconds, totalPressed] = await Promise.all([
     getAllPressedSeconds(),
     getTotalPressed(),
   ]);
+
+  // Sleeves minted since the last index build have no second yet. Read their
+  // metadata live so a fresh press is never silently dropped from the surface.
+  const unindexed = pressedSeconds.filter((s) => s.second === null).map((s) => s.tokenId);
+  if (unindexed.length > 0) {
+    const late = await fetchSleeveMeta(unindexed);
+    for (const row of pressedSeconds) {
+      const meta = late.get(row.tokenId);
+      if (meta) {
+        row.second = meta.second;
+        row.image = meta.image;
+      }
+    }
+  }
+
   return { pressedSeconds, totalPressed };
 }
 

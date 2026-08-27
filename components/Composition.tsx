@@ -31,8 +31,8 @@ function initials(second: PressedSecond): string {
 }
 
 // Deterministic bar height per second, so the waveform is stable across renders.
-function barScale(tokenId: number): number {
-  const h = ((tokenId * 2654435761) >>> 0) % 100;
+function barScale(second: number): number {
+  const h = ((second * 2654435761) >>> 0) % 100;
   return 0.35 + (h / 100) * 0.65;
 }
 
@@ -42,11 +42,20 @@ const ACCENT = "#e8dfcd";
 export default function Composition({ pressedSeconds, disabled = false }: CompositionProps) {
   // Keyed by the second a sleeve plays at, which is the sleeve's own number.
   // The ERC721 token id is only ever used to read that sleeve's audio.
-  const pressedMap = new Map(
-    pressedSeconds
-      .filter((s): s is PressedSecond & { second: number } => s.second !== null)
-      .map((s) => [s.second, s])
-  );
+  const pressedMap = new Map<number, PressedSecond>();
+  for (const sleeve of pressedSeconds) {
+    if (sleeve.second === null) continue;
+    const existing = pressedMap.get(sleeve.second);
+    if (existing) {
+      // Two sleeves claiming one second would hide a real press. Keep the
+      // first and say so, rather than overwriting it in silence.
+      console.warn(
+        `[sleeves] second ${sleeve.second} claimed by tokens ${existing.tokenId} and ${sleeve.tokenId}; keeping ${existing.tokenId}`
+      );
+      continue;
+    }
+    pressedMap.set(sleeve.second, sleeve);
+  }
 
   const [playing, setPlaying] = useState(false);
   const [trackWidth, setTrackWidth] = useState(0);
@@ -113,15 +122,22 @@ export default function Composition({ pressedSeconds, disabled = false }: Compos
       if (scheduledSecondsRef.current.has(secondIdx)) continue;
       const offsetTime = ctxStartTime + i;
       const buffer = await fetchBuffer(secondIdx + 1);
-      scheduledSecondsRef.current.add(secondIdx);
       if (buffer) {
+        // Only a second that actually produced audio counts as scheduled, so a
+        // failed read is retried on the next pass instead of playing silence
+        // for the rest of the session.
+        scheduledSecondsRef.current.add(secondIdx);
         const node = ctx.createBufferSource();
         node.buffer = buffer;
         node.connect(ctx.destination);
         node.start(offsetTime);
         scheduledNodesRef.current.push(node);
+      } else if (!pressedMap.has(secondIdx + 1)) {
+        // Genuine silence: nothing to fetch, so it never needs revisiting.
+        scheduledSecondsRef.current.add(secondIdx);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchBuffer]);
 
   const startPlayback = useCallback(

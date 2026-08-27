@@ -67,7 +67,7 @@ export default function PressPicker() {
               if (pressed) {
                 return (
                   <div key={id} className="opacity-50">
-                    <SleeveImage src={sleeveMeta(id)?.image ?? null} size={220} className="w-full" />
+                    <SleeveImage src={sleeveMeta(id)?.image ?? null} size={320} sizes="(min-width: 640px) 33vw, 45vw" className="w-full" />
                     <p className="mt-2 text-body text-white/60">
                       sleeve #{sleeveMeta(id)?.second ?? id}
                     </p>
@@ -83,7 +83,8 @@ export default function PressPicker() {
                 >
                   <SleeveImage
                     src={sleeveMeta(id)?.image ?? null}
-                    size={220}
+                    size={320}
+                    sizes="(min-width: 640px) 33vw, 45vw"
                     className="w-full brightness-[0.92] transition-[filter] duration-500 group-hover:brightness-110"
                   />
                   <p className="mt-2 text-body text-white/90">

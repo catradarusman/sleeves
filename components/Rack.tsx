@@ -83,7 +83,7 @@ export default function Rack({ pressedSeconds }: Props) {
           {pressed.map((sleeve) => (
             <li key={sleeve.tokenId} className="rack-item">
               <span className="relative block">
-                <SleeveImage src={sleeve.image} size={260} className="w-full brightness-[0.92] saturate-[0.9] transition-[filter,transform] duration-500 hover:brightness-100 hover:saturate-100" />
+                <SleeveImage src={sleeve.image} size={320} sizes="(min-width: 1024px) 260px, (min-width: 640px) 33vw, 45vw" className="w-full brightness-[0.92] saturate-[0.9] transition-[filter,transform] duration-500 hover:brightness-100 hover:saturate-100" />
                 <span className="absolute bottom-0 left-0 bg-paper px-2 py-1 text-caption tracking-[0.14em] text-[#111]">
                   {trackTime(sleeve.second!)}
                 </span>
