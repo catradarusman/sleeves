@@ -2,9 +2,8 @@
 
 import { useAccount, useReadContract } from "wagmi";
 import { useRef, useState, useEffect } from "react";
-import { sdk } from "@farcaster/miniapp-sdk";
-import { isInMiniApp } from "@/lib/miniapp";
 import Waveform from "@/components/Waveform";
+import ShareSleeve from "@/components/ShareSleeve";
 import { SLEEVES_SOUND_ABI, SOUND_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { getClient } from "@/lib/sleeves";
 import { decodeOgg } from "@/lib/audio";
@@ -184,17 +183,6 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
   // Screen D: you pressed it
   if (isOwn) {
-    async function handleShare() {
-      const text = `i pressed sleeve #${sleeveMeta(tokenId)?.second ?? tokenId} of 273 sleeves`;
-      const embedUrl = `https://sleeves.catra.fyi`;
-      if (await isInMiniApp()) {
-        await sdk.actions.composeCast({ text, embeds: [embedUrl] });
-      } else {
-        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(embedUrl)}`;
-        window.open(url, "_blank");
-      }
-    }
-
     return (
       <div className="space-y-6 max-w-sm">
         {hasAudio && (
@@ -253,13 +241,12 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
           )}
         </div>
 
-        <button
-          onClick={handleShare}
-          className="block text-body text-white/60 rounded hover:text-white/90 transition-opacity duration-500 text-left"
+        <div
+          className="transition-opacity duration-500"
           style={{ opacity: shareVisible ? 1 : 0, pointerEvents: shareVisible ? "auto" : "none" }}
         >
-          share on farcaster →
-        </button>
+          <ShareSleeve tokenId={tokenId} mine />
+        </div>
       </div>
     );
   }
@@ -309,6 +296,8 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
       <p className="text-body text-white/60">
         pressed on {pressedAtData ? formatDate(pressedAtData as bigint) : "—"}
       </p>
+
+      <ShareSleeve tokenId={tokenId} />
 
       <a
         href="/"
