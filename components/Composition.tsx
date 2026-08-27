@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import SleeveImage from "@/components/SleeveImage";
 import { TOTAL_SECONDS } from "@/constants";
 import type { PressedSecond } from "@/lib/sleeves";
@@ -9,6 +9,11 @@ type CompositionProps = {
   pressedSeconds: PressedSecond[];
   disabled?: boolean;
 };
+
+/** Lets the rack drive the playhead without lifting position into a parent:
+ *  position ticks once a second during playback, and re-rendering 273 grid
+ *  cells at that rate is the one thing this surface cannot afford. */
+export type CompositionHandle = { seek: (second: number) => void };
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -39,7 +44,7 @@ function barScale(second: number): number {
 const LOOKAHEAD = 10;
 const ACCENT = "#e8dfcd";
 
-export default function Composition({ pressedSeconds, disabled = false }: CompositionProps) {
+function Composition({ pressedSeconds, disabled = false }: CompositionProps, ref: React.Ref<CompositionHandle>) {
   // Keyed by the second a sleeve plays at, which is the sleeve's own number.
   // The ERC721 token id is only ever used to read that sleeve's audio.
   const pressedMap = new Map<number, PressedSecond>();
@@ -192,6 +197,13 @@ export default function Composition({ pressedSeconds, disabled = false }: Compos
     if (playing) startPlayback(second - 1);
   }
 
+  useImperativeHandle(ref, () => ({
+    seek: (second: number) => {
+      setPosition(second);
+      if (playing) startPlayback(second - 1);
+    },
+  }), [playing, startPlayback]);
+
   useEffect(() => {
     return () => {
       cancelScheduled();
@@ -246,17 +258,21 @@ export default function Composition({ pressedSeconds, disabled = false }: Compos
   // Holder markers, thinned against the real track width so two never overlap:
   // one marker is 24px wide, so it needs 28px of room whatever the screen is.
   const minGapPercent = trackWidth > 0 ? (28 / trackWidth) * 100 : 6;
+  const placeable = [...pressedSeconds]
+    .filter((s) => s.holderAddress && s.second !== null)
+    .sort((a, b) => (a.second ?? 0) - (b.second ?? 0));
   const markers: PressedSecond[] = [];
   let lastPercent = -100;
-  for (const second of [...pressedSeconds]
-    .filter((s) => s.holderAddress && s.second !== null)
-    .sort((a, b) => (a.second ?? 0) - (b.second ?? 0))) {
+  for (const second of placeable) {
     const percent = (((second.second ?? 1) - 1) / (TOTAL_SECONDS - 1)) * 100;
     if (percent - lastPercent >= minGapPercent) {
       markers.push(second);
       lastPercent = percent;
     }
   }
+  // The thinning above drops whatever will not fit. At 273 pressed that is most
+  // of them, so say so rather than presenting a sample as the whole.
+  const hiddenMarkers = placeable.length - markers.length;
 
   const current = pressedMap.get(position) ?? null;
   const elapsedSeconds = position - 1;
@@ -363,12 +379,19 @@ export default function Composition({ pressedSeconds, disabled = false }: Compos
             ))}
           </div>
 
-          <div className="flex justify-between text-caption text-paper/60 tracking-[0.12em] mt-1">
-            <span>{formatTime(elapsedSeconds)}</span>
-            <span>4:33</span>
+          <div className="flex items-baseline justify-between gap-2 text-caption text-paper/60 tracking-[0.12em] mt-1">
+            <span className="flex-shrink-0">{formatTime(elapsedSeconds)}</span>
+            {hiddenMarkers > 0 && (
+              <span className="min-w-0 truncate tracking-normal text-paper/45">
+                showing {markers.length} of {placeable.length} presses
+              </span>
+            )}
+            <span className="flex-shrink-0">4:33</span>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+export default forwardRef(Composition);

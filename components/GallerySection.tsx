@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import Composition from "@/components/Composition";
+import Composition, { type CompositionHandle } from "@/components/Composition";
 import Rack from "@/components/Rack";
 import { useUnsealedToken } from "@/lib/useUnsealedToken";
 import { usePressedSeconds } from "@/lib/usePressedSeconds";
@@ -39,11 +39,16 @@ export default function GallerySection({
 }) {
   const { address } = useAccount();
   const unsealedTokenId = useUnsealedToken(address);
+  const compositionRef = useRef<CompositionHandle>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const { data, status, error, refetch, isFetching } = usePressedSeconds();
 
   const pressedSeconds = data?.pressedSeconds ?? [];
   const totalPressed = data?.totalPressed ?? 0;
+  // The contract's own counter, not the indexed array: a sleeve missing from
+  // the index would otherwise hide the fact that the piece is finished.
+  const complete = totalPressed === TOTAL_SECONDS;
   const pressedSet = new Set(pressedSeconds.map((s) => s.tokenId));
 
   const { data: unpressedIds } = useQuery<number[]>({
@@ -76,6 +81,18 @@ export default function GallerySection({
           >
             finish saving your sound →
           </Link>
+        </div>
+      );
+    }
+
+    if (complete) {
+      return (
+        <div className="border border-white/10 rounded-[20px] p-3">
+          <p className="text-label text-white/90">4′33″ is complete.</p>
+          <p className="text-body text-white/60 mt-1 text-pretty">
+            every one of the 273 seconds is pressed. the finished composition is assembled and
+            airdropped to every holder as a CC0 network composition.
+          </p>
         </div>
       );
     }
@@ -129,17 +146,22 @@ export default function GallerySection({
 
     if (!address) {
       return (
-        <p className="text-body text-white/60 text-pretty">
-          hold a sleeve? connect and press your second.{" "}
+        // Connecting is the header's job on every route; repeating it here put
+        // two identical actions in the same corner. The action this card owns
+        // is the one the header does not offer: getting a sleeve.
+        <div className="border border-white/10 rounded-[20px] p-3">
+          <p className="text-body text-white/60 mb-3 text-pretty">
+            hold a sleeve? connect above and press your second.
+          </p>
           <a
             href={HIGHLIGHT_MINT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white/90 underline underline-offset-4 hover:text-white transition-colors rounded"
+            className="block w-full py-2.5 text-body text-center text-white/90 border border-white/40 rounded-lg hover:border-white/70 transition-colors"
           >
-            get a sleeve
+            get a sleeve on Highlight →
           </a>
-        </p>
+        </div>
       );
     }
 
@@ -183,22 +205,40 @@ export default function GallerySection({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10 lg:items-start">
-      <div className="space-y-8 min-w-0">
+    // Three grid items rather than two columns: below lg they stack in source
+    // order, which puts the press action above the rack instead of a rack's
+    // worth of scrolling below it.
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-10 lg:items-start">
+      <div className="space-y-8 min-w-0 lg:col-start-1 lg:row-start-1">
         <p className="text-caption uppercase tracking-[0.28em] text-paper/60">
-          {totalPressed === 0
-            ? `${TOTAL_SECONDS} seconds · none pressed yet`
-            : `${totalPressed} of ${TOTAL_SECONDS} seconds pressed`}
+          {complete
+            ? `all ${TOTAL_SECONDS} seconds pressed · 4′33″ is complete`
+            : totalPressed === 0
+              ? `${TOTAL_SECONDS} seconds · none pressed yet`
+              : `${totalPressed} of ${TOTAL_SECONDS} seconds pressed`}
         </p>
 
-        <Composition pressedSeconds={pressedSeconds} />
-
-        <Rack pressedSeconds={pressedSeconds} />
+        <div ref={playerRef} className="scroll-mt-6">
+          <Composition ref={compositionRef} pressedSeconds={pressedSeconds} />
+        </div>
       </div>
 
-      <div className="space-y-8 lg:sticky lg:top-6">
+      <div className="space-y-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6">
         {yourSleeve}
         {sidebar}
+      </div>
+
+      <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+        <Rack
+          pressedSeconds={pressedSeconds}
+          viewerAddress={address}
+          onSelect={(second) => {
+            compositionRef.current?.seek(second);
+            // The rack sits below the player, so a click with no visible
+            // response would read as a dead card.
+            playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </div>
     </div>
   );

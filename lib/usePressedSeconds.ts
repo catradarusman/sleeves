@@ -32,6 +32,13 @@ export function usePressedSeconds() {
     queryKey: ["gallery"],
     queryFn: fetchGalleryData,
     refetchInterval: 60_000,
+    // Without this every additional component that reads this query refetches
+    // the whole gallery on mount, because a staleTime of 0 marks the cached
+    // data stale the instant it lands. Those mounts happen in the same render
+    // pass, so this only has to be long enough to cover one. Keep it short:
+    // nothing invalidates this query after a press, so a longer window would
+    // show a returning presser a rack that is missing their own second.
+    staleTime: 5_000,
     // Fail fast and say so, rather than spinning through long backoff.
     retry: 1,
     // navigator.onLine lies often enough that pausing here leaves the surface

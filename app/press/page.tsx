@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
+import ConnectButton from "@/components/ConnectButton";
 import SleeveImage from "@/components/SleeveImage";
 import { sleeveMeta } from "@/lib/sleeveIndex";
 
@@ -51,7 +52,12 @@ export default function PressPicker() {
       <SiteHeader />
 
       {!address && (
-        <p className="text-body text-white/60">connect your wallet to press your second.</p>
+        <div className="max-w-xs space-y-3">
+          <p className="text-body text-white/60 text-pretty">
+            connect your wallet to press your second.
+          </p>
+          <ConnectButton variant="primary" />
+        </div>
       )}
 
       {address && (loading || tokenIds === null) && (

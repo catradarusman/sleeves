@@ -36,28 +36,54 @@ export function getClient() {
   });
 }
 
+// One client for the whole session. A fresh client per call would reset the
+// batch scheduler, which is the thing doing the work here.
+let mainnetClient: ReturnType<typeof createPublicClient> | null = null;
+
 function getMainnetClient() {
+  if (mainnetClient) return mainnetClient;
   // Must send CORS headers: this runs in the browser. llamarpc does not, which
   // silently killed every ENS lookup and left holders showing as raw hex.
   const rpc = process.env.NEXT_PUBLIC_ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
-  // ENS is a nicety: fail fast and fall back to the raw address.
-  return createPublicClient({
+  mainnetClient = createPublicClient({
     chain: mainnet,
-    transport: http(rpc, { timeout: 5_000, retryCount: 0 }),
+    // A reverse lookup is one eth_call against the ENS Universal Resolver. Sent
+    // one per holder, 273 holders is 273 requests a minute at a free public
+    // node, which rate-limits and leaves every holder rendering as raw hex.
+    // multicall folds them into a few aggregate3 calls instead.
+    batch: { multicall: { batchSize: 8_192 } },
+    // A batch covers many lookups, so it needs longer than a single call did.
+    transport: http(rpc, { timeout: 10_000, retryCount: 0, batch: true }),
   });
+  return mainnetClient;
 }
 
+// Names change rarely; presses do not. Without this the 60s refetch resolves
+// every holder again from scratch, forever.
+const ensCache = new Map<string, string | null>();
+
 async function resolveEnsNames(addresses: string[]): Promise<Map<string, string | null>> {
-  const unique = [...new Set(addresses)];
-  const client = getMainnetClient();
-  const results = await Promise.allSettled(
-    unique.map((addr) => client.getEnsName({ address: addr as `0x${string}` }))
-  );
+  // Keyed lowercase: the contract returns checksummed addresses, and the same
+  // holder must not occupy two cache slots.
+  const unique = [...new Set(addresses.map((a) => a.toLowerCase()))];
+  const missing = unique.filter((addr) => !ensCache.has(addr));
+
+  if (missing.length > 0) {
+    const client = getMainnetClient();
+    const results = await Promise.allSettled(
+      missing.map((addr) => client.getEnsName({ address: addr as `0x${string}` }))
+    );
+    missing.forEach((addr, i) => {
+      const r = results[i];
+      // Only a settled answer is cached. A failed lookup stays unknown so the
+      // next read retries it, rather than pinning that holder to raw hex for
+      // the rest of the session.
+      if (r.status === "fulfilled") ensCache.set(addr, r.value ?? null);
+    });
+  }
+
   const map = new Map<string, string | null>();
-  unique.forEach((addr, i) => {
-    const r = results[i];
-    map.set(addr, r.status === "fulfilled" ? (r.value ?? null) : null);
-  });
+  for (const addr of unique) map.set(addr, ensCache.get(addr) ?? null);
   return map;
 }
 
@@ -191,7 +217,7 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
 
   return rows.map((row) => ({
     ...row,
-    ensName: row.holderAddress ? ensMap.get(row.holderAddress) ?? null : null,
+    ensName: row.holderAddress ? ensMap.get(row.holderAddress.toLowerCase()) ?? null : null,
   }));
 }
 
