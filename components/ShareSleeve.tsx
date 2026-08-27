@@ -112,7 +112,7 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
           aria-label={`copy the link to ${label}`}
           className={buttonClass}
         >
-          {copied ? "copied" : compact ? "link" : "copy link"}
+          {copied ? "link copied" : "copy link"}
         </button>
       </div>
       {failed && <p className="mt-2 text-caption text-red-400">{failed}</p>}

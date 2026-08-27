@@ -58,7 +58,7 @@ export function generateMetadata({ params }: { params: { tokenId: string } }): M
 export default function PressedPage({ params }: { params: { tokenId: string } }) {
   const tokenId = parseInt(params.tokenId, 10);
   return (
-    <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 max-w-lg mx-auto">
+    <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 lg:px-8 max-w-lg lg:max-w-5xl mx-auto">
       <SiteHeader />
       <PressedView tokenId={tokenId} />
     </main>

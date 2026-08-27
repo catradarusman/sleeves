@@ -225,18 +225,24 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
   const sleeveNumber = meta ? `#${meta.second}` : `token #${tokenId}`;
 
   return (
-    <div className="space-y-6 max-w-sm">
+    <div className="space-y-6 max-w-sm sm:max-w-md">
       {/* Your sleeve, before you press it. The art is the reason to care. */}
       {step === "idle" && (
-        <div className="flex items-end gap-4">
-          <SleeveImage src={meta?.image ?? null} size={200} priority className="w-28 flex-shrink-0" />
-          <div className="pb-1">
+        <div className="flex items-end gap-4 sm:gap-6">
+          <SleeveImage
+            src={meta?.image ?? null}
+            size={480}
+            sizes="(min-width: 1024px) 160px, (min-width: 640px) 144px, 112px"
+            priority
+            className="w-28 sm:w-36 lg:w-40 flex-shrink-0 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
+          />
+          <div className="pb-1 min-w-0">
             <p className="text-caption uppercase tracking-[0.28em] text-paper/60">your sleeve</p>
-            <p className="mt-1 text-[44px] font-medium leading-[0.85] tracking-[-0.04em] text-paper">
+            <p className="mt-1 text-[44px] sm:text-[52px] font-medium leading-[0.85] tracking-[-0.04em] tabular-nums text-paper">
               {String(meta?.second ?? tokenId).padStart(3, "0")}
             </p>
             {meta && (
-              <p className="mt-2 text-caption text-paper/60">
+              <p className="mt-2 text-caption text-paper/60 tabular-nums">
                 plays at {Math.floor((meta.second - 1) / 60)}:{String((meta.second - 1) % 60).padStart(2, "0")} of 4′33″
               </p>
             )}
@@ -248,14 +254,14 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
       {recoveryMode && step === "idle" && (
         <div className="space-y-4 max-w-sm">
           <div className="space-y-1">
-            <p className="text-label text-white/90">sleeve {sleeveNumber} is reserved. the sound isn&apos;t saved.</p>
+            <p className="text-label text-white/90 text-balance">sleeve {sleeveNumber} is reserved. the sound isn&apos;t saved.</p>
             <p className="text-body text-white/60 text-pretty">
               your first transaction went through. the second one, which saves the sound onchain, did not. one transaction left.
             </p>
           </div>
           <button
             onClick={handleResume}
-            className="text-body border border-white/40 rounded px-6 py-2 min-w-[120px] hover:border-white/70 transition-[border-color,transform] duration-200 active:scale-[0.96]"
+            className="inline-flex min-h-[40px] min-w-[140px] items-center justify-center rounded-md border border-white/40 px-6 text-body hover:border-white/70 transition-[border-color,transform] duration-200 active:scale-[0.96]"
           >
             save the sound →
           </button>
@@ -275,7 +281,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
               </div>
               <button
                 onClick={() => setConfirmed(true)}
-                className="text-body rounded border border-paper px-6 py-2 min-w-[120px] text-paper transition-[background-color,color,transform] duration-200 hover:bg-paper hover:text-[#111] active:scale-[0.96]"
+                className="inline-flex min-h-[40px] min-w-[140px] items-center justify-center rounded-md border border-paper px-6 text-body text-paper transition-[background-color,color,transform] duration-200 hover:bg-paper hover:text-[#111] active:scale-[0.96]"
               >
                 press it →
               </button>
@@ -291,12 +297,12 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 permanent. saved onchain. no preview. no undo.
               </p>
 
-              <label className="flex items-center gap-3 cursor-pointer p-3 -mx-3 rounded hover:bg-white/5">
+              <label className="flex min-h-[40px] items-center gap-3 cursor-pointer p-3 -mx-3 rounded-lg hover:bg-white/5 transition-colors">
                 <input
                   type="checkbox"
                   checked={checkboxChecked}
                   onChange={(e) => setCheckboxChecked(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer appearance-none border border-white/40 checked:bg-white transition-colors flex-shrink-0"
+                  className="w-4 h-4 cursor-pointer appearance-none rounded-[2px] border border-white/40 checked:bg-white transition-colors flex-shrink-0"
                 />
                 <span className="text-body text-white/60">i understand, press my second</span>
               </label>
@@ -305,13 +311,13 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
                 <button
                   onClick={handlePress}
                   disabled={!checkboxChecked}
-                  className="text-body border border-white/40 rounded px-6 py-2 min-w-[120px] hover:border-white/70 transition-[border-color,opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-[40px] min-w-[140px] items-center justify-center rounded-md border border-white/40 px-6 text-body hover:border-white/70 transition-[border-color,opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   confirm and press
                 </button>
                 <button
                   onClick={() => { setConfirmed(false); setCheckboxChecked(false); }}
-                  className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
+                  className="inline-flex min-h-[40px] items-center rounded text-body text-white/60 hover:text-white/90 transition-colors"
                 >
                   go back
                 </button>
@@ -326,7 +332,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
         const STEPS = ["reserve", "make sound", "save onchain"] as const;
         const currentIdx = step === "tx1" ? 0 : step === "generating" ? 1 : step === "tx2" ? 2 : 3;
         return (
-          <div className="flex gap-6 justify-center mb-6">
+          <div role="status" aria-label={`step ${Math.min(currentIdx + 1, 3)} of 3`} className="flex gap-6 justify-center mb-6">
             {STEPS.map((label, i) => (
               <div key={label} className="flex flex-col items-center gap-1">
                 <div className={`w-6 h-6 rounded-full border ${
@@ -377,7 +383,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
               setStep("idle");
               setError(null);
             }}
-            className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
+            className="inline-flex min-h-[40px] items-center rounded text-body text-white/60 hover:text-white/90 transition-colors"
           >
             try again
           </button>
