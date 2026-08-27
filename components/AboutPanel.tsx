@@ -8,9 +8,9 @@ export default function AboutPanel() {
   return (
     <div className="space-y-2">
       <p className="text-body text-white/60 text-pretty">
-        273 Sleeves holders each own one second of 4′33″ — John Cage&apos;s silent composition.
-        press your second and a unique sound is generated onchain from your wallet, your token,
-        and the exact block timestamp. no two sounds are the same.
+        273 Sleeves holders each own one second of 4′33″, John Cage&apos;s silent composition.
+        press your second and a sound is generated onchain from your wallet, your token, and the
+        block timestamp. no two sounds are the same.
       </p>
 
       <div
@@ -30,7 +30,7 @@ export default function AboutPanel() {
 
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="text-caption text-meta hover:text-white/50 transition-colors"
+        className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
       >
         {isOpen ? "read less" : "read more"}
       </button>

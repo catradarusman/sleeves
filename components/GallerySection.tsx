@@ -4,73 +4,46 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { useEffect } from "react";
 import Link from "next/link";
-import GalleryPlayer from "@/components/GalleryPlayer";
+import Composition from "@/components/Composition";
+import Rack from "@/components/Rack";
 import { useUnsealedToken } from "@/lib/useUnsealedToken";
+import { usePressedSeconds } from "@/lib/usePressedSeconds";
 import { TOTAL_SECONDS } from "@/constants";
-import { getAllPressedSeconds, getTotalPressed, getTokensOwnedBy } from "@/lib/sleeves";
-import type { PressedSecond } from "@/lib/sleeves";
+import { getTokensOwnedBy } from "@/lib/sleeves";
 
-const MOCK_PRESSED: PressedSecond[] = [
-  {
-    tokenId: 1,
-    holderAddress: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-    ensName: "vitalik.eth",
-    pressedAt: 1715000000,
-    hasAudio: true,
-  },
-  {
-    tokenId: 17,
-    holderAddress: "0x1234567890abcdef1234567890abcdef12345678",
-    ensName: null,
-    pressedAt: 1715100000,
-    hasAudio: true,
-  },
-  {
-    tokenId: 42,
-    holderAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-    ensName: "catra.eth",
-    pressedAt: 1715200000,
-    hasAudio: false,
-  },
-  {
-    tokenId: 99,
-    holderAddress: "0x9999999999999999999999999999999999999999",
-    ensName: null,
-    pressedAt: 1715300000,
-    hasAudio: true,
-  },
-  {
-    tokenId: 200,
-    holderAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    ensName: null,
-    pressedAt: 1715400000,
-    hasAudio: true,
-  },
-];
+const HIGHLIGHT_MINT_URL =
+  "https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3";
 
-async function fetchGalleryData() {
-  const [pressedSeconds, totalPressed] = await Promise.all([
-    getAllPressedSeconds(),
-    getTotalPressed(),
-  ]);
-  return { pressedSeconds, totalPressed };
+// viem nests the real cause; walk the chain rather than matching one message.
+function isNetworkError(err: unknown): boolean {
+  let cur = err;
+  for (let i = 0; i < 6 && cur instanceof Error; i++) {
+    const withDetails = cur as Error & { details?: string; shortMessage?: string };
+    const text = `${cur.name} ${cur.message} ${withDetails.details ?? ""} ${withDetails.shortMessage ?? ""}`;
+    if (/httprequesterror|timeouterror|socketclosed|http request failed|failed to fetch|fetch failed|econnrefused|timed out|network/i.test(text)) {
+      return true;
+    }
+    cur = (cur as Error & { cause?: unknown }).cause;
+  }
+  return false;
 }
 
-export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: number) => void }) {
+export default function GallerySection({
+  onPressCTA,
+  sidebar,
+}: {
+  onPressCTA?: (tokenId: number) => void;
+  // Rendered under the holder slot: the right column on desktop, below the
+  // player on narrow screens.
+  sidebar?: React.ReactNode;
+}) {
   const { address } = useAccount();
   const unsealedTokenId = useUnsealedToken(address);
 
-  const { data, isError } = useQuery({
-    queryKey: ["gallery"],
-    queryFn: fetchGalleryData,
-    refetchInterval: 30_000,
-    placeholderData: { pressedSeconds: MOCK_PRESSED, totalPressed: MOCK_PRESSED.length },
-  });
+  const { data, status, error, refetch, isFetching } = usePressedSeconds();
 
-  const pressedSeconds = data?.pressedSeconds ?? MOCK_PRESSED;
-  const totalPressed = data?.totalPressed ?? MOCK_PRESSED.length;
-  const usingMock = isError || pressedSeconds === MOCK_PRESSED;
-
+  const pressedSeconds = data?.pressedSeconds ?? [];
+  const totalPressed = data?.totalPressed ?? 0;
   const pressedSet = new Set(pressedSeconds.map((s) => s.tokenId));
 
   const { data: unpressedIds } = useQuery<number[]>({
@@ -79,7 +52,7 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
       const owned = await getTokensOwnedBy(address!);
       return owned.filter((id) => !pressedSet.has(id));
     },
-    enabled: !!address,
+    enabled: !!address && status === "success",
   });
 
   useEffect(() => {
@@ -88,105 +61,145 @@ export default function GallerySection({ onPressCTA }: { onPressCTA?: (tokenId: 
     }
   }, [unpressedIds]);
 
-  return (
-    <>
-      <div className="mb-6">
-        <div className="relative h-px bg-white/10 mb-2">
-          <div
-            className="absolute inset-y-0 left-0 bg-white/60"
-            style={{ width: `${(totalPressed / TOTAL_SECONDS) * 100}%` }}
-          />
-          {totalPressed < 260 && (
-            <div
-              className="absolute inset-y-0 w-px bg-white/20"
-              style={{ left: `${(260 / TOTAL_SECONDS) * 100}%` }}
-            />
-          )}
-        </div>
-        <div className="flex justify-between items-baseline">
-          <p className="text-label font-mono text-white/40 tabular-nums">
-            {totalPressed} of {TOTAL_SECONDS} pressed
+  // One slot for the holder's next action — never two at once.
+  const yourSleeve = (() => {
+    if (unsealedTokenId !== null) {
+      return (
+        <div className="border border-white/10 rounded-[20px] p-3">
+          <p className="text-label text-white/90">second #{unsealedTokenId}</p>
+          <p className="text-body text-white/60 mt-1 mb-3 text-pretty">
+            your sound is made. it is not saved. one transaction left.
           </p>
-          <div className="flex items-baseline gap-3">
-            {totalPressed >= 260 && (
-              <p className="text-caption text-meta">
-                {TOTAL_SECONDS - totalPressed} left
-              </p>
-            )}
-            {totalPressed < 260 && (
-              <p className="text-caption text-white/20">
-                260 — airdrop
-              </p>
-            )}
-            <a
-              href="https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3"
-              target="_blank" rel="noopener noreferrer"
-              className="text-caption text-white/30 hover:text-white/50 transition-colors"
-            >
-              get a sleeve →
-            </a>
-          </div>
+          <Link
+            href={`/press/${unsealedTokenId}`}
+            className="block w-full py-2.5 text-body text-center text-black bg-white rounded-lg hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
+          >
+            finish saving your sound →
+          </Link>
         </div>
-      </div>
+      );
+    }
 
-      {unpressedIds && unpressedIds.length > 0 && (
-        <div className="border border-white/10 rounded p-4 mb-6">
-          <p className="text-caption text-meta mb-1">sleeve #{unpressedIds[0]}</p>
-          <p className="text-body text-white/60 mb-3">
+    if (unpressedIds && unpressedIds.length > 0) {
+      const tokenId = unpressedIds[0];
+      return (
+        <div className="border border-white/10 rounded-[20px] p-3">
+          <p className="text-label text-white/90">second #{tokenId}</p>
+          <p className="text-body text-white/60 mt-1 mb-3 text-pretty">
             {unpressedIds.length === 1
-              ? "your second hasn't been pressed yet"
-              : `you have ${unpressedIds.length} seconds waiting`}
+              ? "your second is still silent."
+              : `you hold ${unpressedIds.length} seconds. none of them pressed.`}
           </p>
           {onPressCTA ? (
             <button
-              onClick={() => onPressCTA(unpressedIds[0])}
-              className="w-full mt-3 py-2.5 text-sm font-mono text-black bg-white rounded hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
+              onClick={() => onPressCTA(tokenId)}
+              className="w-full py-2.5 text-body text-black bg-white rounded-lg hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
             >
-              press your second →
+              press second #{tokenId} →
             </button>
           ) : (
-            <a
-              href={unpressedIds.length === 1 ? `/press/${unpressedIds[0]}` : "/press"}
-              className="block w-full mt-3 py-2.5 text-sm font-mono text-center text-black bg-white rounded hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
+            <Link
+              href={unpressedIds.length === 1 ? `/press/${tokenId}` : "/press"}
+              className="block w-full py-2.5 text-body text-center text-black bg-white rounded-lg hover:bg-white/90 transition-[background-color,transform] active:scale-[0.96]"
             >
-              press your second →
-            </a>
+              press second #{tokenId} →
+            </Link>
           )}
         </div>
-      )}
+      );
+    }
 
-      {unsealedTokenId !== null && (
-        <div className="border border-amber-400/20 rounded p-4 mb-6">
-          <p className="text-caption text-amber-400/60 mb-1">sleeve #{unsealedTokenId}</p>
-          <p className="text-body text-white/60 mb-3">audio not yet sealed onchain</p>
-          <Link href={`/press/${unsealedTokenId}`}
-            className="block w-full py-2.5 text-sm font-mono text-center text-amber-400/80 border border-amber-400/20 rounded hover:border-amber-400/40 transition-colors">
-            finish sealing →
-          </Link>
-        </div>
-      )}
-
-      <GalleryPlayer pressedSeconds={pressedSeconds} totalPressed={totalPressed} />
-
-      {address && unpressedIds && unpressedIds.length === 0 && (
-        <div className="border border-white/10 rounded p-4 mb-6">
-          <p className="text-caption text-meta mb-1">no sleeve yet</p>
-          <p className="text-body text-white/40 mb-3">get a sleeve to press your second onchain</p>
+    if (address && unpressedIds && unpressedIds.length === 0) {
+      return (
+        <div className="border border-white/10 rounded-[20px] p-3">
+          <p className="text-body text-white/60 mb-3 text-pretty">
+            every sleeve you hold is pressed.
+          </p>
           <a
-            href="https://highlight.xyz/mint/base:0x4428be530724b5ee47e4cb0061f77024933a4dc3"
-            target="_blank" rel="noopener noreferrer"
-            className="block w-full py-2.5 text-sm font-mono text-center text-white/80 border border-white/20 rounded hover:border-white/40 transition-colors"
+            href={HIGHLIGHT_MINT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full py-2.5 text-body text-center text-white/90 border border-white/40 rounded-lg hover:border-white/70 transition-colors"
           >
             get a sleeve on Highlight →
           </a>
         </div>
-      )}
+      );
+    }
 
-      {usingMock && (
-        <p className="mt-4 text-caption text-meta text-center">
-          mock data — contract reads unavailable
+    if (!address) {
+      return (
+        <p className="text-body text-white/60 text-pretty">
+          hold a sleeve? connect and press your second.{" "}
+          <a
+            href={HIGHLIGHT_MINT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/90 underline underline-offset-4 hover:text-white transition-colors rounded"
+          >
+            get a sleeve
+          </a>
         </p>
-      )}
-    </>
+      );
+    }
+
+    return null;
+  })();
+
+  if (status === "pending") {
+    return (
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10 lg:items-start">
+        <div className="space-y-8 min-w-0">
+          <p className="text-caption uppercase tracking-[0.28em] text-paper/60">reading Base…</p>
+          <Composition pressedSeconds={[]} disabled />
+        </div>
+        <div>{sidebar}</div>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    const unreachable = isNetworkError(error);
+
+    return (
+      <div className="border border-white/10 rounded-[20px] p-3">
+        <p className="text-label text-white/90">
+          {unreachable ? "base didn't answer" : "the read failed"}
+        </p>
+        <p className="text-body text-white/60 mt-1 mb-3 text-pretty">
+          {unreachable
+            ? "the composition lives onchain. nothing is shown until base responds."
+            : "base answered. the contract didn't return the pressed seconds. nothing here is guessed."}
+        </p>
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="py-2.5 px-6 text-body text-white/90 border border-white/40 rounded-lg hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isFetching ? "trying…" : "try again"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10 lg:items-start">
+      <div className="space-y-8 min-w-0">
+        <p className="text-caption uppercase tracking-[0.28em] text-paper/60">
+          {totalPressed === 0
+            ? `${TOTAL_SECONDS} seconds · none pressed yet`
+            : `${totalPressed} of ${TOTAL_SECONDS} seconds pressed`}
+        </p>
+
+        <Composition pressedSeconds={pressedSeconds} />
+
+        <Rack pressedSeconds={pressedSeconds} />
+      </div>
+
+      <div className="space-y-8 lg:sticky lg:top-6">
+        {yourSleeve}
+        {sidebar}
+      </div>
+    </div>
   );
 }

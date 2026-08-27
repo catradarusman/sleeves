@@ -8,7 +8,7 @@ export default function ConnectButton() {
       {({ isConnected, show, truncatedAddress, ensName }) => (
         <button
           onClick={show}
-          className="flex items-center gap-1.5 text-caption text-white/40 hover:text-white/60 transition-colors"
+          className="flex items-center gap-1.5 rounded text-caption uppercase tracking-[0.2em] text-paper/60 hover:text-paper transition-colors"
         >
           <span
             className="w-1.5 h-1.5 rounded-full flex-shrink-0"

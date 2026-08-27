@@ -5,11 +5,65 @@
 :root {
   --background: #111111;
   --foreground: #ffffff;
+  --paper: #e8dfcd;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Paper grain: one inline SVG turbulence over the whole ground, no image
+   request, no layout cost. It is what stops #111 reading as a dashboard. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.5'/></svg>");
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* One focus ring for every control on every route. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+/* Scroll-driven reveal. Supported browsers animate on scroll position with no
+   JS and no IntersectionObserver; everywhere else the items are simply visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .rack-item {
+      animation: rack-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+@keyframes rack-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @keyframes blink {

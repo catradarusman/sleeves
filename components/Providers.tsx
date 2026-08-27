@@ -10,7 +10,14 @@ import { useState, useEffect } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        // Onchain reads must not be paused by the browser's offline guess:
+        // a paused query leaves the surface stuck on its loading state.
+        defaultOptions: { queries: { networkMode: "always", retry: 1 } },
+      })
+  );
   const [isMiniApp, setIsMiniApp] = useState(false);
   const [miniAppConfig, setMiniAppConfig] = useState<ReturnType<typeof createConfig> | null>(null);
 

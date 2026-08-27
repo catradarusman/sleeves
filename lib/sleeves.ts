@@ -1,5 +1,6 @@
 import { createPublicClient, http } from "viem";
 import { base, baseSepolia, mainnet } from "viem/chains";
+import { sleeveMeta } from "./sleeveIndex";
 import {
   SLEEVES_SOUND_ABI,
   ERC721_ABI,
@@ -9,10 +10,15 @@ import {
 
 export type PressedSecond = {
   tokenId: number;
-  holderAddress: string;
+  /** Position in the 4′33″, from the sleeve's "Second" trait. Null when the
+   *  token is not in the sleeve index yet (minted after the last index build). */
+  second: number | null;
+  image: string | null;
+  // null when the chain confirmed the press but the holder read did not come
+  // back (public RPCs rate-limit). Never a placeholder address.
+  holderAddress: string | null;
   ensName: string | null;
   pressedAt: number;
-  hasAudio: boolean;
 };
 
 export function getClient() {
@@ -22,12 +28,21 @@ export function getClient() {
     ? "https://sepolia.base.org"
     : "https://mainnet.base.org";
   const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? defaultRpc;
-  return createPublicClient({ chain, transport: http(rpc) });
+  // Bounded so a dead RPC surfaces an error in seconds, not after a minute
+  // of silent retries behind a loading state.
+  return createPublicClient({
+    chain,
+    transport: http(rpc, { timeout: 6_000, retryCount: 1 }),
+  });
 }
 
 function getMainnetClient() {
   const rpc = process.env.NEXT_PUBLIC_ETH_RPC_URL ?? "https://eth.llamarpc.com";
-  return createPublicClient({ chain: mainnet, transport: http(rpc) });
+  // ENS is a nicety: fail fast and fall back to the raw address.
+  return createPublicClient({
+    chain: mainnet,
+    transport: http(rpc, { timeout: 5_000, retryCount: 0 }),
+  });
 }
 
 async function resolveEnsNames(addresses: string[]): Promise<Map<string, string | null>> {
@@ -119,6 +134,8 @@ async function getSleevesMinted(client: ReturnType<typeof getClient>): Promise<n
 
 // Reads all pressed seconds. Scopes multicall to minted tokens only — avoids
 // oversized batches against the public RPC that would fail for all 273.
+// Never reads getAudio: the payload is up to 15 KB per second and is only
+// needed when a second is actually played.
 export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   const client = getClient();
   const minted = await getSleevesMinted(client);
@@ -134,7 +151,7 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
   const pressedIds = tokenIds.filter((_, i) => isPressedResults[i].result === true);
   if (pressedIds.length === 0) return [];
 
-  const [byResults, atResults, audioResults] = await Promise.all([
+  const [byResults, atResults] = await Promise.all([
     multicallChunked(client, pressedIds.map((id) => ({
       address: SOUND_CONTRACT_ADDRESS,
       abi: SLEEVES_SOUND_ABI,
@@ -147,25 +164,32 @@ export async function getAllPressedSeconds(): Promise<PressedSecond[]> {
       functionName: "pressedAt" as const,
       args: [BigInt(id)] as const,
     }))),
-    multicallChunked(client, pressedIds.map((id) => ({
-      address: SOUND_CONTRACT_ADDRESS,
-      abi: SLEEVES_SOUND_ABI,
-      functionName: "getAudio" as const,
-      args: [BigInt(id)] as const,
-    }))),
   ]);
 
-  const addresses = pressedIds.map((_, i) =>
-    (byResults[i].result as string) ?? "0x0000000000000000000000000000000000000000"
-  );
-  const ensMap = await resolveEnsNames(addresses);
+  // isPressed is the fact that a second was pressed. The holder is a separate
+  // fact: when that read fails, the second stays listed with holder null.
+  const rows = pressedIds.map((tokenId, i) => {
+    const holder = byResults[i].result as string | undefined;
+    const known =
+      typeof holder === "string" &&
+      holder !== "0x0000000000000000000000000000000000000000";
+    const meta = sleeveMeta(tokenId);
+    return {
+      tokenId,
+      second: meta?.second ?? null,
+      image: meta?.image ?? null,
+      holderAddress: known ? holder : null,
+      pressedAt: Number(atResults[i].result ?? BigInt(0)),
+    };
+  });
 
-  return pressedIds.map((tokenId, i) => ({
-    tokenId,
-    holderAddress: addresses[i],
-    ensName: ensMap.get(addresses[i]) ?? null,
-    pressedAt: Number(atResults[i].result ?? BigInt(0)),
-    hasAudio: ((audioResults[i].result as string | undefined) ?? "0x").length > 2,
+  const ensMap = await resolveEnsNames(
+    rows.map((row) => row.holderAddress).filter((a): a is string => a !== null)
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    ensName: row.holderAddress ? ensMap.get(row.holderAddress) ?? null : null,
   }));
 }
 
