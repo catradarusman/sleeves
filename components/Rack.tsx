@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import SleeveImage from "@/components/SleeveImage";
 import ShareSleeve from "@/components/ShareSleeve";
 import { TOTAL_SECONDS } from "@/constants";
@@ -52,27 +53,6 @@ function timeAgo(unixSeconds: number): string {
     if (value >= 1) return `${value} ${name}${value > 1 ? "s" : ""} ago`;
   }
   return "just now";
-}
-
-function CopyAddress({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch {
-          setCopied(false);
-        }
-      }}
-      aria-label={copied ? "address copied" : `copy ${address}`}
-      className="rounded text-caption text-paper/60 hover:text-paper transition-[color,transform] active:scale-[0.96]"
-    >
-      {copied ? "copied" : "copy"}
-    </button>
-  );
 }
 
 export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props) {
@@ -210,34 +190,37 @@ export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props)
           <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {slice.map((sleeve) => (
               <li key={sleeve.tokenId} className="rack-item">
-                <button
-                  onClick={() => onSelect?.(sleeve.second!)}
-                  aria-label={`play second ${sleeve.second}`}
-                  className="relative block w-full rounded-[2px] transition-transform active:scale-[0.98]"
-                >
-                  <SleeveImage src={sleeve.image} size={320} sizes="(min-width: 1024px) 260px, (min-width: 640px) 33vw, 45vw" className="w-full brightness-[0.92] saturate-[0.9] transition-[filter,transform] duration-500 hover:brightness-100 hover:saturate-100" />
-                  <span className="absolute bottom-0 left-0 bg-paper px-2 py-1 text-caption tracking-[0.14em] text-[#111]">
+                <div className="relative">
+                  <Link
+                    href={`/pressed/${sleeve.tokenId}`}
+                    aria-label={`open sleeve #${sleeve.second}`}
+                    className="block w-full rounded-[2px] transition-transform active:scale-[0.98]"
+                  >
+                    <SleeveImage src={sleeve.image} size={320} sizes="(min-width: 1024px) 260px, (min-width: 640px) 33vw, 45vw" className="w-full brightness-[0.92] saturate-[0.9] transition-[filter,transform] duration-500 hover:brightness-100 hover:saturate-100" />
+                  </Link>
+                  <button
+                    onClick={() => onSelect?.(sleeve.second!)}
+                    aria-label={`play second ${sleeve.second} in the composition`}
+                    className="absolute bottom-0 left-0 inline-flex min-h-[40px] items-center bg-paper px-3 text-caption tabular-nums tracking-[0.14em] text-[#111] transition-transform active:scale-[0.96]"
+                  >
                     {trackTime(sleeve.second!)}
-                  </span>
-                </button>
+                  </button>
+                </div>
                 <p className="mt-2 text-body text-white/90">sleeve #{sleeve.second}</p>
-                <p className="flex items-baseline justify-between gap-2 text-caption text-paper/60">
-                  <span className="truncate">
-                    {sleeve.holderAddress ? (
-                      <a
-                        href={`https://basescan.org/address/${sleeve.holderAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded underline decoration-paper/25 underline-offset-4 hover:decoration-paper transition-colors"
-                      >
-                        {sleeve.ensName ?? shortAddress(sleeve.holderAddress)}
-                      </a>
-                    ) : (
-                      "holder unavailable"
-                    )}
-                    {sleeve.pressedAt > 0 && ` · ${timeAgo(sleeve.pressedAt)}`}
-                  </span>
-                  {sleeve.holderAddress && <CopyAddress address={sleeve.holderAddress} />}
+                <p className="truncate text-caption text-paper/60">
+                  {sleeve.holderAddress ? (
+                    <a
+                      href={`https://basescan.org/address/${sleeve.holderAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded underline decoration-paper/25 underline-offset-4 hover:decoration-paper transition-colors"
+                    >
+                      {sleeve.ensName ?? shortAddress(sleeve.holderAddress)}
+                    </a>
+                  ) : (
+                    "holder unavailable"
+                  )}
+                  {sleeve.pressedAt > 0 && ` · ${timeAgo(sleeve.pressedAt)}`}
                 </p>
                 <ShareSleeve
                   tokenId={sleeve.tokenId}

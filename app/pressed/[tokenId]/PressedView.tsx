@@ -184,24 +184,25 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
   // Screen D: you pressed it
   if (isOwn) {
     return (
-      <div className="space-y-6 max-w-sm">
+      <div className="space-y-8 max-w-md lg:max-w-4xl">
         {hasAudio && (
-          <div className="flex items-start gap-4">
+          <div className="grid gap-6 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)] sm:items-start sm:gap-8 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:gap-12">
             <SleeveImage
               src={sleeveMeta(tokenId)?.image ?? null}
-              size={220}
+              size={680}
+              sizes="(min-width: 1024px) 340px, (min-width: 640px) 220px, 70vw"
               priority
-              className="w-28 sm:w-36 flex-shrink-0 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
+              className="w-3/5 sm:w-full shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
             />
-            <div className="space-y-3 flex-1">
+            <div className="min-w-0 space-y-4">
               <div
                 className="transition-opacity duration-300"
                 style={{ opacity: visibleBars > 0 ? 1 : 0 }}
               >
-                <Waveform audioBuffer={audioBuffer} width={220} height={48} visibleBars={visibleBars} />
+                <Waveform audioBuffer={audioBuffer} height={56} visibleBars={visibleBars} />
               </div>
               <p
-                className="text-label text-white transition-opacity duration-500"
+                className="text-label text-white text-balance transition-opacity duration-500"
                 style={{ opacity: copyVisible ? 1 : 0 }}
               >
                 sleeve #{sleeveMeta(tokenId)?.second ?? tokenId} is saved onchain.
@@ -215,7 +216,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
               <button
                 onClick={togglePlay}
                 disabled={!audioBuffer}
-                className="text-body border border-white/40 rounded px-3 py-1.5 hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex min-h-[40px] min-w-[88px] items-center justify-center rounded-md border border-white/40 px-4 text-body hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {playing ? "stop" : "play"}
               </button>
@@ -253,58 +254,62 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
   // Screen E: someone else pressed it
   return (
-    <div className="space-y-6 max-w-sm">
-      <div className="flex items-end gap-4">
+    <div className="max-w-md lg:max-w-4xl">
+      <div className="grid gap-6 sm:grid-cols-[minmax(0,220px)_minmax(0,1fr)] sm:items-start sm:gap-8 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:gap-12">
         <SleeveImage
           src={sleeveMeta(tokenId)?.image ?? null}
-          size={220}
+          size={680}
+          sizes="(min-width: 1024px) 340px, (min-width: 640px) 220px, 70vw"
           priority
-          className="w-28 sm:w-36 flex-shrink-0 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
+          className="w-3/5 sm:w-full shadow-[0_24px_60px_-28px_rgba(0,0,0,0.95)]"
         />
-        <div className="pb-1">
-          <p className="text-caption uppercase tracking-[0.28em] text-paper/60">now showing</p>
-          <p className="mt-1 text-[44px] font-medium leading-[0.85] tracking-[-0.04em] text-paper">
-            {String(sleeveMeta(tokenId)?.second ?? tokenId).padStart(3, "0")}
+
+        <div className="min-w-0 space-y-6">
+          <div>
+            <p className="text-caption uppercase tracking-[0.28em] text-paper/60">now showing</p>
+            <p className="mt-1 text-[44px] lg:text-[64px] font-medium leading-[0.85] tracking-[-0.04em] tabular-nums text-paper">
+              {String(sleeveMeta(tokenId)?.second ?? tokenId).padStart(3, "0")}
+            </p>
+            <p className="mt-3 text-body text-white/60">
+              pressed by {shortAddress(pressedBy as string)}
+            </p>
+          </div>
+
+          {hasAudio && (
+            <div className="space-y-4">
+              <Waveform audioBuffer={audioBuffer} height={56} />
+              <button
+                onClick={togglePlay}
+                disabled={!audioBuffer}
+                className="inline-flex min-h-[40px] min-w-[88px] items-center justify-center rounded-md border border-white/40 px-4 text-body hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {playing ? "stop" : "play"}
+              </button>
+            </div>
+          )}
+
+          {!hasAudio && (
+            <p className="text-body text-white/60 text-pretty">
+              {audioPollExhausted
+                ? "the sound is still being saved onchain. refresh in a moment."
+                : "loading the sound…"}
+            </p>
+          )}
+
+          <p className="text-body text-white/60">
+            pressed on {pressedAtData ? formatDate(pressedAtData as bigint) : "—"}
           </p>
-          <p className="text-body text-white/60 mt-2">
-            pressed by {shortAddress(pressedBy as string)}
-          </p>
+
+          <ShareSleeve tokenId={tokenId} />
+
+          <a
+            href="/"
+            className="inline-flex min-h-[40px] items-center rounded text-body text-white/60 hover:text-white/90 transition-colors"
+          >
+            view the full composition →
+          </a>
         </div>
       </div>
-
-      {hasAudio && (
-        <div className="space-y-3">
-          <Waveform audioBuffer={audioBuffer} width={320} height={48} />
-          <button
-            onClick={togglePlay}
-            disabled={!audioBuffer}
-            className="text-body border border-white/40 rounded px-3 py-1.5 hover:border-white/70 transition-[border-color,transform] active:scale-[0.96] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {playing ? "stop" : "play"}
-          </button>
-        </div>
-      )}
-
-      {!hasAudio && (
-        <p className="text-body text-white/60">
-          {audioPollExhausted
-            ? "the sound is still being saved onchain. refresh in a moment."
-            : "loading the sound…"}
-        </p>
-      )}
-
-      <p className="text-body text-white/60">
-        pressed on {pressedAtData ? formatDate(pressedAtData as bigint) : "—"}
-      </p>
-
-      <ShareSleeve tokenId={tokenId} />
-
-      <a
-        href="/"
-        className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
-      >
-        view the full composition →
-      </a>
     </div>
   );
 }
