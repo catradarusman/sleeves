@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { isInMiniApp, openExternal } from "@/lib/miniapp";
-import { farcasterComposeUrl, shareText, sleeveUrl, xComposeUrl } from "@/lib/share";
+import { farcasterComposeUrl, shareText, sleeveSecond, sleeveUrl, xComposeUrl } from "@/lib/share";
 
 type Props = {
   tokenId: number;
@@ -25,9 +25,23 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
   const [pending, setPending] = useState<Pending>(null);
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  // Answered once, up front. Awaiting it inside the click handler would spend
+  // the user gesture, and Safari blocks a window.open that opens after that.
+  const [inMiniApp, setInMiniApp] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    isInMiniApp()
+      .then((v) => live && setInMiniApp(v))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const url = sleeveUrl(tokenId);
   const text = shareText(tokenId, mine);
+  const label = sleeveSecond(tokenId) === null ? "this sleeve" : `sleeve #${sleeveSecond(tokenId)}`;
 
   async function run(kind: Exclude<Pending, null>, action: () => Promise<void>) {
     if (pending) return;
@@ -36,7 +50,12 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
     try {
       await action();
     } catch {
-      setFailed("that didn't open. try the copy link.");
+      // Pointing a failed copy at the copy link would be a loop.
+      setFailed(
+        kind === "copy"
+          ? "your browser blocked the copy. the link is in the address bar."
+          : "that didn't open. try the copy link."
+      );
     } finally {
       setPending(null);
     }
@@ -44,14 +63,15 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
 
   const shareToFarcaster = () =>
     run("farcaster", async () => {
-      if (await isInMiniApp()) {
+      if (inMiniApp) {
         await sdk.actions.composeCast({ text, embeds: [url] });
         return;
       }
-      await openExternal(farcasterComposeUrl(text, url));
+      openExternal(farcasterComposeUrl(text, url), inMiniApp);
     });
 
-  const shareToX = () => run("x", () => openExternal(xComposeUrl(text, url)));
+  const shareToX = () =>
+    run("x", async () => openExternal(xComposeUrl(text, url), inMiniApp));
 
   const copyLink = () =>
     run("copy", async () => {
@@ -73,7 +93,7 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
         <button
           onClick={shareToFarcaster}
           disabled={pending !== null}
-          aria-label={`share sleeve ${tokenId} on farcaster`}
+          aria-label={`share ${label} on farcaster`}
           className={buttonClass}
         >
           {pending === "farcaster" ? "opening…" : "farcaster"}
@@ -81,7 +101,7 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
         <button
           onClick={shareToX}
           disabled={pending !== null}
-          aria-label={`share sleeve ${tokenId} on X`}
+          aria-label={`share ${label} on X`}
           className={buttonClass}
         >
           {pending === "x" ? "opening…" : "X"}
@@ -89,7 +109,7 @@ export default function ShareSleeve({ tokenId, mine = false, compact = false, cl
         <button
           onClick={copyLink}
           disabled={pending !== null}
-          aria-label={`copy the link to sleeve ${tokenId}`}
+          aria-label={`copy the link to ${label}`}
           className={buttonClass}
         >
           {copied ? "copied" : compact ? "link" : "copy link"}

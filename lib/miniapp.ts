@@ -12,10 +12,12 @@ export async function callReady() {
   await sdk.actions.ready()
 }
 
-/** Mini app webviews block window.open; the host has to do the opening. */
-export async function openExternal(url: string) {
-  if (await isInMiniApp()) {
-    await sdk.actions.openUrl(url)
+/** Mini app webviews block window.open; the host has to do the opening.
+ *  Takes the answer rather than awaiting it: a browser popup has to open in
+ *  the same tick as the click that asked for it. */
+export function openExternal(url: string, inMiniApp: boolean) {
+  if (inMiniApp) {
+    void sdk.actions.openUrl(url)
     return
   }
   window.open(url, '_blank', 'noopener,noreferrer')

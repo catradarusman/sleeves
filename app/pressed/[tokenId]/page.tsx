@@ -10,8 +10,14 @@ import { TOTAL_SECONDS } from "@/constants";
 export function generateMetadata({ params }: { params: { tokenId: string } }): Metadata {
   const tokenId = parseInt(params.tokenId, 10);
   const second = sleeveSecond(tokenId);
-  const title = `sleeve #${second} of ${TOTAL_SECONDS} · 273 Sleeves: Sound`;
-  const description = `one second of 4′33″, generated onchain and saved there forever. it plays at ${trackTime(second)}.`;
+  const title =
+    second === null
+      ? "273 Sleeves: Sound"
+      : `sleeve #${second} of ${TOTAL_SECONDS} · 273 Sleeves: Sound`;
+  const description =
+    second === null
+      ? "one second of 4′33″, generated onchain and saved there forever."
+      : `one second of 4′33″, generated onchain and saved there forever. it plays at ${trackTime(second)}.`;
   const image = `${SITE_URL}/api/og/${tokenId}`;
 
   return {

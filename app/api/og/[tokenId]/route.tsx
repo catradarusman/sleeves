@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { sleeveMeta } from "@/lib/sleeveIndex";
 import { TOTAL_SECONDS } from "@/constants";
-import { trackTime } from "@/lib/share";
+import { isSleeveId, SITE_URL, trackTime } from "@/lib/share";
 
 export const runtime = "edge";
 
@@ -18,14 +18,24 @@ const PAPER = "#e8dfcd";
  */
 export async function GET(req: Request, { params }: { params: { tokenId: string } }) {
   const tokenId = parseInt(params.tokenId, 10);
-  const meta = Number.isFinite(tokenId) ? sleeveMeta(tokenId) : null;
-  const second = meta?.second ?? tokenId;
+  // Out of the collection entirely: no card. Without this a bad id renders
+  // "NaN" onto a real image and crawlers cache it.
+  if (!isSleeveId(tokenId)) return new Response("no such sleeve", { status: 404 });
+
+  // In range but not in the index means the sleeve was minted after the index
+  // was last built. It still deserves a card; it just cannot claim a second.
+  const meta = sleeveMeta(tokenId);
 
   // Sleeve art is an 8 MB 2048px original on Arweave. Pulling it through the
   // image optimiser keeps the card render under a crawler's patience.
-  const origin = new URL(req.url).origin;
+  //
+  // The base is the configured site, not the request origin: origin comes from
+  // the Host header, so a forged one would point this server-side fetch at
+  // someone else's host. Dev has no deployed optimiser to borrow, so it uses
+  // its own.
+  const base = process.env.NODE_ENV === "production" ? SITE_URL : new URL(req.url).origin;
   const art = meta
-    ? `${origin}/_next/image?url=${encodeURIComponent(meta.image)}&w=640&q=75`
+    ? `${base}/_next/image?url=${encodeURIComponent(meta.image)}&w=640&q=75`
     : null;
 
   return new ImageResponse(
@@ -36,39 +46,50 @@ export async function GET(req: Request, { params }: { params: { tokenId: string 
           height: "100%",
           display: "flex",
           alignItems: "center",
+          // With no art there is no left column to sit beside, so the text
+          // takes the middle rather than hugging a gap that isn't there.
+          justifyContent: art ? "flex-start" : "center",
           gap: 64,
           padding: 80,
           background: "#111111",
           color: PAPER,
         }}
       >
-        {art ? (
+        {art && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={art} alt="" width={480} height={480} style={{ borderRadius: 4 }} />
-        ) : (
-          <div style={{ width: 480, height: 480, background: "#1a1a1a", borderRadius: 4 }} />
         )}
 
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: art ? "flex-start" : "center" }}>
           <div style={{ fontSize: 28, letterSpacing: 8, opacity: 0.6 }}>273 SLEEVES: SOUND</div>
-          <div style={{ fontSize: 180, lineHeight: 1, marginTop: 24, letterSpacing: -8 }}>
-            {String(second).padStart(3, "0")}
-          </div>
+          {meta && (
+            <div style={{ fontSize: 180, lineHeight: 1, marginTop: 24, letterSpacing: -8 }}>
+              {String(meta.second).padStart(3, "0")}
+            </div>
+          )}
           <div style={{ fontSize: 32, marginTop: 32, opacity: 0.85 }}>
             {"one second of 4′33″, saved onchain"}
           </div>
-          <div style={{ fontSize: 28, marginTop: 12, opacity: 0.6 }}>
-            {`plays at ${trackTime(second)} · sleeve ${second} of ${TOTAL_SECONDS}`}
-          </div>
+          {meta && (
+            <div style={{ fontSize: 28, marginTop: 12, opacity: 0.6 }}>
+              {`plays at ${trackTime(meta.second)} · sleeve ${meta.second} of ${TOTAL_SECONDS}`}
+            </div>
+          )}
         </div>
       </div>
     ),
     {
       width: WIDTH,
       height: HEIGHT,
-      // Sleeve art and text are both immutable once pressed, so the card is
-      // rendered once and served from the edge after that.
-      headers: { "cache-control": "public, max-age=31536000, immutable" },
+      // An indexed sleeve's card can never change, so it is rendered once and
+      // served from the edge after that. The card for a sleeve the index has
+      // not caught up with will change the moment it does, so that one is only
+      // held for an hour.
+      headers: {
+        "cache-control": meta
+          ? "public, max-age=31536000, immutable"
+          : "public, max-age=3600, must-revalidate",
+      },
     }
   );
 }
