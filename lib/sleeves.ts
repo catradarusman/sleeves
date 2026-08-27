@@ -24,10 +24,10 @@ export type PressedSecond = {
 export function getClient() {
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 8453);
   const chain = chainId === 84532 ? baseSepolia : base;
-  const defaultRpc = chainId === 84532
-    ? "https://sepolia.base.org"
-    : "https://mainnet.base.org";
-  const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? defaultRpc;
+  const rpc =
+    chainId === 84532
+      ? process.env.NEXT_PUBLIC_RPC_URL_SEPOLIA ?? "https://sepolia.base.org"
+      : process.env.NEXT_PUBLIC_RPC_URL ?? "https://mainnet.base.org";
   // Bounded so a dead RPC surfaces an error in seconds, not after a minute
   // of silent retries behind a loading state.
   return createPublicClient({
