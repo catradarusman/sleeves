@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SleeveImage from "@/components/SleeveImage";
+import ShareSleeve from "@/components/ShareSleeve";
 import { TOTAL_SECONDS } from "@/constants";
 import type { PressedSecond } from "@/lib/sleeves";
 
@@ -238,6 +239,12 @@ export default function Rack({ pressedSeconds, onSelect, viewerAddress }: Props)
                   </span>
                   {sleeve.holderAddress && <CopyAddress address={sleeve.holderAddress} />}
                 </p>
+                <ShareSleeve
+                  tokenId={sleeve.tokenId}
+                  mine={!!mine && sleeve.holderAddress?.toLowerCase() === mine}
+                  compact
+                  className="mt-1"
+                />
               </li>
             ))}
           </ul>

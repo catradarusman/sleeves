@@ -13,6 +13,7 @@ import SleeveImage from "@/components/SleeveImage";
 import { sleeveMeta } from "@/lib/sleeveIndex";
 import { deriveSeed } from "@/lib/seed";
 import { generateAudio } from "@/lib/audio";
+import ShareSleeve from "@/components/ShareSleeve";
 
 const publicClient = getClient();
 
@@ -363,12 +364,7 @@ export default function PressFlow({ tokenId, onComplete }: { tokenId: number; on
             </p>
           )}
           {step === "done" && onComplete && (
-            <a
-              href={`https://warpcast.com/~/compose?text=${encodeURIComponent(`i pressed sleeve ${sleeveNumber} of 273 sleeves`)}&embeds[]=${encodeURIComponent("https://sleeves.catra.fyi")}`}
-              className="text-body text-white/60 rounded hover:text-white/90 transition-colors"
-            >
-              share on farcaster →
-            </a>
+            <ShareSleeve tokenId={tokenId} mine className="pt-3" />
           )}
         </div>
       )}

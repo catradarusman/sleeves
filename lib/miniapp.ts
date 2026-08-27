@@ -11,3 +11,12 @@ export async function getMiniAppProvider() {
 export async function callReady() {
   await sdk.actions.ready()
 }
+
+/** Mini app webviews block window.open; the host has to do the opening. */
+export async function openExternal(url: string) {
+  if (await isInMiniApp()) {
+    await sdk.actions.openUrl(url)
+    return
+  }
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
