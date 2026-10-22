@@ -3,8 +3,6 @@ import { sleeveMeta } from "@/lib/sleeveIndex";
 import { TOTAL_SECONDS } from "@/constants";
 import { isSleeveId, SITE_URL, trackTime } from "@/lib/share";
 
-export const runtime = "edge";
-
 // 3:2. Farcaster embeds want that ratio; X crops it to 1.91:1 from the centre,
 // which is why nothing sits in the outer bands.
 const WIDTH = 1200;
