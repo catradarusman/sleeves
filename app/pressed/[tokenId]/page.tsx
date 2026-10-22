@@ -7,8 +7,8 @@ import { TOTAL_SECONDS } from "@/constants";
 // A shared sleeve gets its own card: its number, its art, its place in the
 // 4′33″. The front door is one tap further in, which is where the next press
 // comes from.
-export function generateMetadata({ params }: { params: { tokenId: string } }): Metadata {
-  const tokenId = parseInt(params.tokenId, 10);
+export async function generateMetadata({ params }: { params: Promise<{ tokenId: string }> }): Promise<Metadata> {
+  const tokenId = parseInt((await params).tokenId, 10);
   const second = sleeveSecond(tokenId);
   const title =
     second === null
@@ -55,8 +55,8 @@ export function generateMetadata({ params }: { params: { tokenId: string } }): M
   };
 }
 
-export default function PressedPage({ params }: { params: { tokenId: string } }) {
-  const tokenId = parseInt(params.tokenId, 10);
+export default async function PressedPage({ params }: { params: Promise<{ tokenId: string }> }) {
+  const tokenId = parseInt((await params).tokenId, 10);
   return (
     <main className="min-h-screen px-4 pt-4 pb-10 sm:px-6 lg:px-8 max-w-lg lg:max-w-5xl mx-auto">
       <SiteHeader />
