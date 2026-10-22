@@ -302,6 +302,7 @@ export default function PressedView({ tokenId }: { tokenId: number }) {
 
           <ShareSleeve tokenId={tokenId} />
 
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- predates the Next 16 lint setup; full page load kept as is */}
           <a
             href="/"
             className="inline-flex min-h-[40px] items-center rounded text-body text-white/60 hover:text-white/90 transition-colors"

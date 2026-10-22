@@ -16,8 +16,8 @@ const PAPER = "#e8dfcd";
  * A share card that shows the sleeve itself. A generic card gets scrolled past;
  * the art is the thing a stranger stops for.
  */
-export async function GET(req: Request, { params }: { params: { tokenId: string } }) {
-  const tokenId = parseInt(params.tokenId, 10);
+export async function GET(req: Request, { params }: { params: Promise<{ tokenId: string }> }) {
+  const tokenId = parseInt((await params).tokenId, 10);
   // Out of the collection entirely: no card. Without this a bad id renders
   // "NaN" onto a real image and crawlers cache it.
   if (!isSleeveId(tokenId)) return new Response("no such sleeve", { status: 404 });
